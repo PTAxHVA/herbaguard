@@ -1,0 +1,14 @@
+{
+    "interaction_id": 1,
+    "drug_id": 1,
+    "herb_id": 1,
+    "interaction": {
+        "summary": "Khổ qua có tác dụng hạ đường huyết; dùng cùng Glibenclamid có thể làm hạ đường huyết quá mức, gây tụt đường huyết nguy hiểm.",
+        "mechanism": "Tác dụng hạ đường huyết của khổ qua cộng gộp với thuốc hạ đường huyết nhóm sulfonylurea (Glibenclamid) làm tăng nguy cơ hypoglycemia.",
+        "possible_consequences": [
+            "Hạ đường huyết",
+            "Tụt đường huyết nguy hiểm"
+        ],
+        "recommendation": "Thận trọng khi dùng khổ qua cùng Glibenclamid; cân nhắc tránh hoặc theo dõi đường huyết sát để phòng hạ đường huyết."
+    }
+}
