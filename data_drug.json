@@ -1,0 +1,31 @@
+[
+  {
+    "drug_id": 1,
+    "aliases": [
+      "warfarin",
+      "coumadin",
+      "thuốc chống đông warfarin",
+      "warfarin natri"
+    ]
+  },
+  {
+    "drug_id": 2,
+    "aliases": [
+      "metformin",
+      "glucophage",
+      "metformin hydrochloride",
+      "thuốc tiểu đường metformin",
+      "metformin hcl"
+    ]
+  },
+  {
+    "drug_id": 3,
+    "aliases": [
+      "aspirin",
+      "acetylsalicylic acid",
+      "asa",
+      "thuốc kháng viêm aspirin",
+      "axít acetylsalicylic"
+    ]
+  }
+]

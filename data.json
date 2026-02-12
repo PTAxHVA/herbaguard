@@ -1,0 +1,32 @@
+[
+  {
+    "herb_id": 1,
+    "aliases": [
+      "nhân sâm",
+      "sâm",
+      "hồng sâm",
+      "panax ginseng",
+      "ginseng"
+    ]
+  },
+  {
+    "herb_id": 2,
+    "aliases": [
+      "nghệ",
+      "curcumin",
+      "curcuma longa",
+      "turmeric",
+      "khương hoàng"
+    ]
+  },
+  {
+    "herb_id": 3,
+    "aliases": [
+      "bạch quả",
+      "ginkgo",
+      "ginkgo biloba",
+      "cây bạch quả",
+      "ngân hạnh"
+    ]
+  }
+]

@@ -1,0 +1,16 @@
+# Environment variables (Sensitive Data)
+.env
+
+# Documentation
+README.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+herb_env/
+venv/
+env/
+myenv/
