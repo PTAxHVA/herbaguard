@@ -1,9 +1,376 @@
-{
+[
+  {
     "drug_id": 1,
     "aliases": [
-        "warfarin",
-        "coumadin",
-        "thuốc chống đông warfarin",
-        "warfarin natri"
+      "amiodarone",
+      "amiodaron",
+      "amiodaron (amiodarone)",
+      "cordarone",
+      "amiodaron stada",
+      "amiodaron stada®",
+      "(2-{4-[(2-butyl-1-benzofuran-3-yl)carbonyl]-2,6-diiodophenoxy}ethyl)diethylamine"
     ]
-}
+  },
+  {
+    "drug_id": 2,
+    "aliases": [
+      "amlodipine",
+      "amlodipin",
+      "amlodipin (amlodipine)",
+      "amlor",
+      "amlodipin stada",
+      "hasan",
+      "aplat",
+      "normodipine",
+      "3-ethyl 5-methyl 2-[(2-aminoethoxy)methyl]-4-(2-chlorophenyl)-6-methyl-1,4-dihydropyridine-3,5-dicarboxylate"
+    ]
+  },
+  {
+    "drug_id": 3,
+    "aliases": [
+      "antacids",
+      "aluminum hydroxide",
+      "magnesium hydroxide",
+      "aluminum hydroxide/ magnesium hydroxide",
+      "maalox",
+      "mylanta",
+      "gastropulgite",
+      "phosphalugel",
+      "gaviscon",
+      "yumangel",
+      "thuốc chữ y",
+      "kremil-s",
+      "kremil s",
+      "kremil-s."
+    ]
+  },
+  {
+    "drug_id": 4,
+    "aliases": [
+      "aspirin",
+      "acid acetylsalicylic",
+      "aspirin (acid acetylsalicylic)",
+      "2-acetyloxybenzoic acid",
+      "aspirin ph8",
+      "aspirin 81",
+      "aspegic",
+      "aspirin mkp"
+    ]
+  },
+  {
+    "drug_id": 5,
+    "aliases": [
+      "atorvastatin",
+      "(3r,5r)-7-[2-(4-fluorophenyl)-3-phenyl-4-(phenylcarbamoyl)-5-propan-2-ylpyrrol-1-yl]-3,5-dihydroxyheptanoic acid",
+      "lipitor",
+      "lipistad",
+      "atorvastatin stada",
+      "torvazin"
+    ]
+  },
+  {
+    "drug_id": 6,
+    "aliases": [
+      "captopril",
+      "(2s)-1-[(2s)-2-methyl-3-sulfanylpropanoyl]pyrrolidine-2-carboxylic acid",
+      "capoten",
+      "lopril",
+      "captopril stada",
+      "captopril domesco",
+      "captosid",
+      "captosid."
+    ]
+  },
+  {
+    "drug_id": 7,
+    "aliases": [
+      "carbamazepine",
+      "carbamazepin",
+      "carbamazepin (carbamazepine)",
+      "5h-dibenz[b,f]azepine-5-carboxamide",
+      "tegretol",
+      "carbamazepin stada",
+      "carbatol"
+    ]
+  },
+  {
+    "drug_id": 8,
+    "aliases": [
+      "cyclosporine",
+      "ciclosporin",
+      "cyclosporine (ciclosporin)",
+      "(3s,6s,9s,12r,15s,18s,21s,24s,30s,33s)-30-ethyl-33-[(e,1r,2r)-1-hydroxy-2-methylhex-4-enyl]-1,4,7,10,12,15,19,25,28-nonamethyl-6,9,18,24-tetrakis(2-methylpropyl)-3,21-di(propan-2-yl)-1,4,7,10,13,16,19,22,25,28,31-undecazacyclotritriacontane-2,5,8,11,14,17,20,23,26,29,32-undecone.",
+      "sandimmune",
+      "neoral",
+      "gengraf",
+      "restasis",
+      "nhỏ mắt",
+      "cicloral",
+      "consupren",
+      "consupren."
+    ]
+  },
+  {
+    "drug_id": 9,
+    "aliases": [
+      "diazepam",
+      "7-chloro-1-methyl-5-phenyl-1,3-dihydro-1,4-benzodiazepin-2-one",
+      "valium",
+      "seduxen",
+      "diazepin",
+      "diastat",
+      "ducene",
+      "diazepam danapha",
+      "diazepam danapha."
+    ]
+  },
+  {
+    "drug_id": 10,
+    "aliases": [
+      "diclofenac",
+      "2-[2-(2,6-dichloroanilino)phenyl]acetic acid",
+      "voltaren",
+      "diclofenac stada",
+      "zengesic",
+      "diclofenac"
+    ]
+  },
+  {
+    "drug_id": 11,
+    "aliases": [
+      "digoxin",
+      "4-[(3s,5r,8r,9s,10s,12r,13s,14s)-3-[(2r,4s,5s,6r)-5-[(2r,4s,5s,6r)-5-[(2r,4s,5s,6r)-4,5-dihydroxy-6-methyl-oxan-2-yl]oxy-4-hydroxy-6-methyl-oxan-2-yl]oxy-4-hydroxy-6-methyl-oxan-2-yl]oxy-12,14-dihydroxy-10,13-dimethyl-1,2,3,4,5,6,7,8,9,11,12,15,16,17-tetradecahydrocyclopenta[a]phenanthren-17-yl]-5h-furan-2-one",
+      "lanoxin"
+    ]
+  },
+  {
+    "drug_id": 12,
+    "aliases": [
+      "eplerenone",
+      "methyl (1r,2s,9r,10r,11s,14r,15s,17r)-2,15-dimethyl-5,5'-dioxospiro[18-oxapentacyclo[8.8.0.01, 17.02, 7.011]octadec-6-ene-14,2'-oxolane]-9-carboxylate",
+      "inspra",
+      "eleve",
+      "eplerenon accord",
+      "eplerenon teva",
+      "eplerenon teva."
+    ]
+  },
+  {
+    "drug_id": 13,
+    "aliases": [
+      "fluoxetine",
+      "n-methyl-3-phenyl-3-[4-(trifluoromethyl)phenoxy]propan-1-amine",
+      "prozac",
+      "sarafem",
+      "selfemra",
+      "oxetin",
+      "fluoxetine stada",
+      "fluxetin",
+      "daforin",
+      "daforin."
+    ]
+  },
+  {
+    "drug_id": 14,
+    "aliases": [
+      "furosemid",
+      "furosemide",
+      "furosemid (furosemide)",
+      "4-chloro-2-[(furan-2-ylmethyl)amino]-5-sulfamoylbenzoic acid",
+      "lasix",
+      "trofurit",
+      "diurapid",
+      "furosid",
+      "furosemid stada",
+      "furosemid domesco"
+    ]
+  },
+  {
+    "drug_id": 15,
+    "aliases": [
+      "glibenclamide",
+      "glibenclamid",
+      "glyburide",
+      "glibenclamid (glibenclamide, glyburide)",
+      "5-chloro-n-(4-[n-(cyclohexylcarbamoyl)sulfamoyl]phenethyl)-2-methoxybenzamide",
+      "maninil",
+      "glibenclamid stada",
+      "nilerium"
+    ]
+  },
+  {
+    "drug_id": 16,
+    "aliases": [
+      "gliclazide",
+      "gliclazid",
+      "gliclazide (gliclazid)",
+      "(3,3a,4,5,6,6a-hexahydro-1h-cyclopenta[c]pyrrol-2-yl)-3-(4-methylphenyl)sulfonylurea",
+      "diamicron",
+      "diamicron mr",
+      "predian",
+      "gliclazide stada",
+      "gliclazide domesco",
+      "azukon",
+      "thuốc hạt gạo",
+      "thuoc hat gao"
+    ]
+  },
+  {
+    "drug_id": 17,
+    "aliases": [
+      "glipizide",
+      "n-[4-(cyclohexylcarbamoylsulfamoyl)phenyl]ethyl]-5-methylpyrazine-2-carboxamide",
+      "glucotrol",
+      "glucotrol xl",
+      "minidiab",
+      "glibenese",
+      "glipizide stada",
+      "glipizide stada."
+    ]
+  },
+  {
+    "drug_id": 18,
+    "aliases": [
+      "ibuprofen",
+      "(rs)-2-(4-(2-methylpropyl)phenyl)propanoic acid",
+      "gofen",
+      "brufen",
+      "nurofen",
+      "ibuprofen stada",
+      "hagifen"
+    ]
+  },
+  {
+    "drug_id": 19,
+    "aliases": [
+      "insulin",
+      "insulin human",
+      "human insulin",
+      "mixtard",
+      "lantus",
+      "novomix",
+      "humalog",
+      "actrapid",
+      "insulatard"
+    ]
+  },
+  {
+    "drug_id": 20,
+    "aliases": [
+      "ivabradine",
+      "3-[3-({[(7s)-3,4-dimethoxybicycloocta-1,3,5-trien-7-yl]methyl}(methyl)amino)propyl]-7,8-dimethoxy-2,3,4,5-tetrahydro-1h-3-benzazepin-2-one",
+      "procoralan",
+      "corlanor",
+      "ivabrad",
+      "ivabid",
+      "coraxan",
+      "coraxan."
+    ]
+  },
+  {
+    "drug_id": 21,
+    "aliases": [
+      "lisinopril",
+      "n2-[(1s)-1-carboxy-3-phenylpropyl]-l-lysyl-l-proline",
+      "zestril",
+      "lisinopril stada"
+    ]
+  },
+  {
+    "drug_id": 22,
+    "aliases": [
+      "metformin",
+      "n,n-dimethylimidodicarbonimidic diamide",
+      "glucophage",
+      "glucophage xr",
+      "panfor",
+      "siofor",
+      "metformin stada",
+      "metform"
+    ]
+  },
+  {
+    "drug_id": 23,
+    "aliases": [
+      "methotrexate",
+      "(2s)-2-[(4-{(2,4-diaminopteridin-6-yl)methylamino}benzoyl)amino]pentanedioic acid",
+      "rheumatrex",
+      "trexall",
+      "maxtrex",
+      "unitrexate",
+      "methotrexate bidiphar",
+      "methotrexate belmed",
+      "bidiphar"
+    ]
+  },
+  {
+    "drug_id": 24,
+    "aliases": [
+      "nadolol",
+      "(2r,3s)-5-{[(2r)-3-(tert-butylamino)-2-hydroxypropyl]oxy}-1,2,3,4-tetrahydronaphthalene-2,3-diol",
+      "corgard"
+    ]
+  },
+  {
+    "drug_id": 25,
+    "aliases": [
+      "prednisolone",
+      "prednisolon",
+      "prednisolon (prednisolone)",
+      "(11β)-11,17,21-trihydroxypregna-1,4-diene-3,20-dione",
+      "prednisolon choay",
+      "solupred",
+      "prednisolon 5mg",
+      "prednisolon stada"
+    ]
+  },
+  {
+    "drug_id": 26,
+    "aliases": [
+      "simvastatin",
+      "(1s,3r,7s,8s,8ar)-8-{2-[(2r,4r)-4-hydroxy-6-oxotetrahydro-2h-pyran-2-yl]ethyl}-3,7-dimethyl-1,2,3,7,8,8a-hexahydronaphthalen-1-yl 2,2-dimethylbutanoate",
+      "zocor",
+      "simvastatin stada",
+      "simvahexal"
+    ]
+  },
+  {
+    "drug_id": 27,
+    "aliases": [
+      "spironolactone",
+      "s -[(7 r ,8 r ,9 s ,10 r ,13 s ,14 s ,17 r )-10,13-dimethyl-3,5'-dioxospiro[2,6,7,8,9,11,12,14,15,16-decahydro-1 h -cyclopenta[a]phenanthrene-17,2'-oxolane]-7-yl] ethanethioate",
+      "aldactone",
+      "spirix",
+      "verospiron",
+      "spironolactone stada",
+      "spironolactone stada."
+    ]
+  },
+  {
+    "drug_id": 28,
+    "aliases": [
+      "tacrolimus",
+      "(1 r ,9 s ,12 s ,13 r ,14 s , 17 r ,18 e ,21 s ,23 s ,24 r ,25 s ,27 r )-1,14-dihydroxy-12-[( e )-1-[(1 r ,3 r ,4 r )-4-hydroxy-3-methoxycyclohexyl]prop-1-en-2-yl]-23,25-dimethoxy-13,19,21,27-tetramethyl-17-prop-2-enyl-11,28-dioxa-4-azatricyclo[22.3.1.0 4,9 ]octacos-18-ene-2,3,10,16-tetrone",
+      "prograf",
+      "advagraf",
+      "protopic",
+      "thuốc bôi",
+      "astagraf xl",
+      "envarsus xr",
+      "envarsus xr."
+    ]
+  },
+  {
+    "drug_id": 29,
+    "aliases": [
+      "warfarin",
+      "coumadin",
+      "thuốc chống đông warfarin",
+      "warfarin natri",
+      "4-hydroxy-3-(3-oxo-1-phenylbutyl)-2h-chromen-2-one",
+      "zofarin",
+      "uni-warfin",
+      "uni-warfin"
+    ]
+  }
+]
