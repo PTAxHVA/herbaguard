@@ -1,13 +1,653 @@
-{
+[
+    {
     "interaction_id": 1,
     "drug_id": 1,
+    "herb_id": 7,
+    "interaction": {
+      "mechanism": "Cả hai đều có độc tính cao với tế bào gan . Dùng chung làm tăng gấp bội nguy cơ hoại tử tế bào gan và suy gan cấp tính .",
+      "possible_consequences": [
+        "Tăng nồng độ thuốc trong máu dẫn đến tăng nguy cơ tác dụng phụ như đau cơ, tiêu cơ vân "
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Amiodarone và cúc dại để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 2,
+    "drug_id": 2,
+    "herb_id": 19,
+    "interaction": {
+      "mechanism": "Nước bưởi ức chế enzym CYP3A4, làm Amlodipine tích tụ gây quá liều. Gây tụt huyết áp tư thế nghiêm trọng, người già ngã gãy xương.",
+      "possible_consequences": [
+        "Gây hạ đường huyết quá mức",
+        "Nhìn mờ, run rẩy",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Amlodipine và bưởi để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 3,
+    "drug_id": 2,
+    "herb_id": 15,
+    "interaction": {
+      "mechanism": "Nấm linh chi hiệp đồng giãn mạch mạnh với Amlodipine . Gây tụt huyết áp kịch liệt, dẫn đến sốc hoặc té ngã gây chấn thương sọ não .",
+      "possible_consequences": [
+        "Gây hạ đường huyết quá mức",
+        "Nhìn mờ, run rẩy",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Amlodipine và linh chi để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 4,
+    "drug_id": 2,
+    "herb_id": 21,
+    "interaction": {
+      "mechanism": "Cả hai đều làm giãn mạch mạnh. Kết hợp dùng chung gây hạ huyết áp quá mức, khiến người già dễ bị chóng mặt, hoa mắt và té ngã do hạ huyết áp tư thế.",
+      "possible_consequences": [
+        "Gây hạ đường huyết quá mức",
+        "Nhìn mờ, run rẩy",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Amlodipine và tỏi để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 5,
+    "drug_id": 3,
     "herb_id": 1,
     "interaction": {
-        "mechanism": "Tác dụng hạ đường huyết của khổ qua cộng gộp với thuốc hạ đường huyết nhóm sulfonylurea (Glibenclamid) làm tăng nguy cơ hypoglycemia.",
-        "possible_consequences": [
-            "Hạ đường huyết",
-            "Tụt đường huyết nguy hiểm"
-        ],
-        "recommendation": "Thận trọng khi dùng khổ qua cùng Glibenclamid; cân nhắc tránh hoặc theo dõi đường huyết sát để phòng hạ đường huyết."
+      "mechanism": "Sự gia tăng đáng kể nồng độ pH gây ra bởi thuốc kháng axit có thể làm lớp màng bao tan trong ruột bị hòa tan sớm, dẫn đến việc giải phóng dầu bạc hà ngay tại dạ dày. Tình trạng này làm tăng nguy cơ bị ợ nóng khi sử dụng bạc hà",
+      "possible_consequences": [
+        "Ợ nóng, khó tiêu, buồn nôn",
+        "Giảm tác dụng thuốc "
+      ],
+      "recommendation": "Nếu sử dụng đồng thời phải uống cách nhau khoảng 2 giờ. Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Antacids và bạc hà để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
     }
-}
+  },
+  {
+    "interaction_id": 6,
+    "drug_id": 4,
+    "herb_id": 12,
+    "interaction": {
+      "mechanism": "Gừng tươi có hoạt tính chống kết tập tiểu cầu, tương tự aspirin. Dùng đồng thời gừng với aspirin hoặc thuốc chống đông khác sẽ làm tăng nguy cơ chảy máu (xuất huyết nội tạng hoặc dưới da) cho người bệnh",
+      "possible_consequences": [
+        "Tăng nguy cơ chảy máu"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Aspirin và gừng để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 7,
+    "drug_id": 4,
+    "herb_id": 8,
+    "interaction": {
+      "mechanism": "Dầu cá liều cao hiệp đồng ức chế tiểu cầu với Aspirin. Gây xuất huyết dạ dày thầm lặng hoặc chảy máu võng mạc.",
+      "possible_consequences": [
+        "Tăng nguy cơ chảy máu "
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Aspirin và Dầu cá (Omega-3) để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 8,
+    "drug_id": 4,
+    "herb_id": 10,
+    "interaction": {
+      "mechanism": "Đan sâm làm tăng nồng độ Aspirin trong máu một cách nguy hiểm, dẫn đến rủi ro xuất huyết kịch phát.",
+      "possible_consequences": [
+        "Tăng tác dụng chống đông máu"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Aspirin và đan sâm để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 9,
+    "drug_id": 4,
+    "herb_id": 16,
+    "interaction": {
+      "mechanism": "Nghệ liều cao ức chế enzym gan làm tăng nồng độ Aspirin. Hiệu ứng cộng hưởng làm \"loãng máu\" cực độ gây xuất huyết não hoặc dạ dày .",
+      "possible_consequences": [
+        "Ảnh hưởng đến chức năng tiểu cầu và đông máu, tăng nguy cơ chảy máu",
+        "Chảy máu, bầm tím bất thường",
+        "Chóng mặt, choáng váng",
+        "Phân đỏ hoặc đen",
+        "Ho ra hoặc nôn ra máu",
+        "Đau đầu, yếu sức"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Aspirin và nghệ để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 10,
+    "drug_id": 5,
+    "herb_id": 19,
+    "interaction": {
+      "mechanism": "Nước bưởi chứa chất ức chế enzyme CYP3A4 ở gan, khiến thuốc statin không được chuyển hóa bình thường. Kết quả là nồng độ statin tăng cao trong máu, gây quá liều – dẫn tới tổn thương gan, đau cơ hoặc tiêu cơ vân nguy hiểm.",
+      "possible_consequences": [
+        "Tăng nồng độ thuốc trong máu dẫn đến tăng nguy cơ tác dụng phụ như đau cơ, tiêu cơ vân "
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Atorvasatin và bưởi để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 11,
+    "drug_id": 5,
+    "herb_id": 14,
+    "interaction": {
+      "mechanism": "Men gạo đỏ chứa monacolin K, bản chất chính là Lovastatin. Uống chung với Atorvastatin khiến bệnh nhân bị quá liều statin cực nặng, dẫn đến tiêu cơ vân, hủy hoại tế bào cơ và gây suy thận cấp kịch phát.",
+      "possible_consequences": [
+        "Tăng nguy cơ tổn thương thần kinh, gan "
+      ],
+      "recommendation": "Tránh hoặc hạn chế sử dụng men gạo đỏ khi điều trị bằng Atorvastatin"
+    }
+  },
+  {
+    "interaction_id": 12,
+    "drug_id": 6,
+    "herb_id": 15,
+    "interaction": {
+      "mechanism": "Nâm linh chi có tác dụng làm giảm đường huyết khi kết hợp với Captopril có thể gây hạ huyết áp gây nguyê hiểm cho người bệnh ",
+      "possible_consequences": [
+        "Gây hạ đường huyết quá mức",
+        "Nhìn mờ, run rẩy",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Captoril và nấm linh chi để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 13,
+    "drug_id": 7,
+    "herb_id": 19,
+    "interaction": {
+      "mechanism": "Isoenzym cytochrome P450 CYP3A4 là enzym chính tham gia vào chuyển hóa carbamazepine. Các thành phần trong nước ép bưởi được biết là ức chế CYP3A4, từ đó làm giảm chuyển hóa carbamazepine và dẫn đến tăng nồng độ thuốc trong máu.",
+      "possible_consequences": [
+        "Giảm nồng độ và tác dụng của Carbamazepine"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Carbamazepine và bưởi để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 14,
+    "drug_id": 7,
+    "herb_id": 3,
+    "interaction": {
+      "mechanism": "Ban âu cảm ứng enzym gan cực mạnh, làm thuốc Carbamazepine bị đào thải mất tác dụng. Gây ra các cơn co giật liên hồi.",
+      "possible_consequences": [
+        "Giảm nồng độ và tác dụng của Carbamazepine"
+      ],
+      "recommendation": "Tránh sử dụng đồng thời hoặc sử dụng thuốc thay thế "
+    }
+  },
+  {
+    "interaction_id": 15,
+    "drug_id": 8,
+    "herb_id": 3,
+    "interaction": {
+      "mechanism": "Ban âu làm nồng độ thuốc ức chế miễn dịch rơi xuống dưới ngưỡng điều trị. Đối với người già đã thay tạng, điều này tương đương với một \"án tử\" vì tạng ghép sẽ bị cơ thể đào thải ngay lập tức.",
+      "possible_consequences": [
+        "Giảm nồng độ và tác dụng của Cyclosporine "
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Cyclosporine và Ban âu để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 16,
+    "drug_id": 9,
+    "herb_id": 20,
+    "interaction": {
+      "mechanism": "Cồn làm tăng cực độ tác dụng ức chế thần kinh của Diazepam. Sự kết hợp này gây ức chế trung tâm hô hấp ở hành não, dẫn đến tình trạng ngừng thở khi ngủ hoặc hôn mê sâu.",
+      "possible_consequences": [
+        "Chóng mặt, buồn ngủ, khó tập trung "
+      ],
+      "recommendation": "Tránh hoặc hạn chế sử dụng rượu bia khi điều trị bằng Diazepam"
+    }
+  },
+  {
+    "interaction_id": 17,
+    "drug_id": 10,
+    "herb_id": 23,
+    "interaction": {
+      "mechanism": "Bản chất đều là thuốc kháng viêm liều cao. Dùng chung gây viêm loét dạ dày nặng và suy thận cấp ở người già do ức chế kép quá trình bảo vệ niêm mạc.",
+      "possible_consequences": [
+        "Có nguy cơ làm giảm nồng độ thuốc trong cơ thể "
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Diclofenac và vỏ liễu trắng để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 18,
+    "drug_id": 10,
+    "herb_id": 2,
+    "interaction": {
+      "mechanism": "Bạch quả thuộc nhóm “hoạt huyết dưỡng não”, khi dùng chung NSAID sẽ cộng hưởng tác dụng ức chế tiểu cầu, làm tăng đáng kể nguy cơ chảy máu (xuất huyết) ở bệnh nhân",
+      "possible_consequences": [
+        "Chảy máu, bầm tím bất thường",
+        "Chóng mặt, choáng váng",
+        "Phân đỏ hoặc đen",
+        "Ho ra hoặc nôn ra máu",
+        "Đau đầu, yếu sức"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Diclofenac và bạch quả để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 19,
+    "drug_id": 11,
+    "herb_id": 4,
+    "interaction": {
+      "mechanism": "Việc uống cam thảo trong khi dùng Digoxin có thể làm tăng độc tính của Digoxin do hạ kali máu và magie máu. Hậu quả là bệnh nhân dễ bị buồn nôn, rối loạn thị lực, và đặc biệt loạn nhịp tim trầm trọng.",
+      "possible_consequences": [
+        "Gây mất magiê và kali",
+        "Tăng nguy cơ gặp phải các tác dụng phụ độc hại của digoxin"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời digoxin và cam thảo để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 20,
+    "drug_id": 11,
+    "herb_id": 18,
+    "interaction": {
+      "mechanism": "Khi kết hợp, Nhân sâm có thể kích thích tim và làm thay đổi các kênh ion cơ tim. Việc tim bị kích thích quá mức dẫn đến các cơn loạn nhịp thất kịch phát, gây ngất xỉu hoặc ngừng tim đột ngột.",
+      "possible_consequences": [
+        "Tăng nguy cơ ngộ độc Digoxin và sai lệch kết quả chẩn đoán"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ để sử dụng phương pháp xét nghiệm đặc hiệu và theo dõi sát các dấu hiệu lâm sàng"
+    }
+  },
+  {
+    "interaction_id": 21,
+    "drug_id": 12,
+    "herb_id": 3,
+    "interaction": {
+      "mechanism": "Eplerenone được chuyển hóa bởi isoenzyme cytochrome P450 CYP3A4. Do đó, các chất gây cảm ứng enzyme này như St John’s wort sẽ làm giảm nồng độ của thuốc trong cơ thể",
+      "possible_consequences": [
+        "Giảm nồng độ và mất tác dụng điều trị của Eplerenone"
+      ],
+      "recommendation": "Tránh sử dụng đồng thời hoặc sử dụng thuốc thay thế"
+    }
+  },
+  {
+    "interaction_id": 22,
+    "drug_id": 13,
+    "herb_id": 3,
+    "interaction": {
+      "mechanism": "Cả hai cùng làm tăng nồng độ Serotonin trong não. Dùng chung dẫn đến Hội chứng Serotonin (vã mồ hôi, tiêu chảy, co thắt cơ, lú lẫn), có thể gây tử vong.",
+      "possible_consequences": [
+        "Nguy cơ mắc hội chứng Serotonin",
+        "Lú lẫn, ảo giác, co giật",
+        "Thay đổi huyết áp đột ngột, tăng nhịp tim",
+        "Co thắt hoặc cứng cơ, run tay, mất phối hợp tay chân",
+        "Buồn nôn, tiêu chảy"
+      ],
+      "recommendation": "Cần đến ngay cơ sở y tế gần nhất nếu gặp phải các triệu chứng trên. Tránh hoặc hạn chế tiêu thụ Ban âu trong khi đang điều trị bằng Flouxetine"
+    }
+  },
+  {
+    "interaction_id": 23,
+    "drug_id": 14,
+    "herb_id": 4,
+    "interaction": {
+      "mechanism": "Cam thảo có hoạt tính giữ muối nước, làm tăng thải kali khi dùng chung với thuốc lợi tiểu, gây hạ kali máu nghiêm trọng và tăng nguy cơ loạn nhịp tim",
+      "possible_consequences": [
+        "Gây hạ kali máu",
+        "Mệt mỏi, đau hoặc yếu cơ",
+        "Đau bụng, khó thở, nhịp tim không đều"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời furosemide và cam thảo để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 24,
+    "drug_id": 15,
+    "herb_id": 13,
+    "interaction": {
+      "mechanism": "Khổ qua có tác dụng hạ đường huyết mạnh, kết hợp với thuốc dễ làm đường huyết hạ quá mức, gây tụt đường huyết nguy hiểm",
+      "possible_consequences": [
+        "Tăng nguy cơ hạ đường huyết quá mức"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ để theo dõi chặt chẽ chỉ số đường huyết và điều chỉnh liều lượng"
+    }
+  },
+  {
+    "interaction_id": 25,
+    "drug_id": 15,
+    "herb_id": 17,
+    "interaction": {
+      "mechanism": "Nha đam có công dụng hạ đường huyết khi kết hợp với thuốc hạ đường huyết Glibenclamide có thể gây ra hạ đường huyết không kiểm soát.",
+      "possible_consequences": [
+        "Hạ đường huyết",
+        "Đau đầu, chóng mặt, buồn ngủ",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Glibenclamide và nha đam để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 26,
+    "drug_id": 16,
+    "herb_id": 9,
+    "interaction": {
+      "mechanism": "Gây cộng hưởng hạ đường huyết quá mạnh. Người bệnh dễ rơi vào tình trạng hạ đường huyết cấp tính (run rẩy, vã mồ hôi, ngất xỉu), có thể đe dọa tính mạng.",
+      "possible_consequences": [
+        "Tăng tác dụng hạ đường huyết gây nguy hiểm"
+      ],
+      "recommendation": "Cần theo dõi đường huyết thường xuyên và báo bác sĩ điều chỉnh liều lượng"
+    }
+  },
+  {
+    "interaction_id": 27,
+    "drug_id": 17,
+    "herb_id": 16,
+    "interaction": {
+      "mechanism": "Nghệ liều cao tăng nhạy cảm insulin và ức chế enzym gan xử lý thuốc. Gây hạ đường huyết kịch sàn, hôn mê sâu.",
+      "possible_consequences": [
+        "Hạ đường huyết",
+        "Đau đầu, chóng mặt, buồn ngủ",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Glipizide và nghệ để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 28,
+    "drug_id": 18,
+    "herb_id": 2,
+    "interaction": {
+      "mechanism": "Cả NSAID và bạch quả đều làm loãng máu, dễ gây xuất huyết. Đã có báo cáo y khoa về trường hợp tử vong do xuất huyết não ở bệnh nhân dùng đồng thời ginkgo và ibuprofen",
+      "possible_consequences": [
+        "Chảy máu, bầm tím bất thường",
+        "Chóng mặt, choáng váng",
+        "Phân đỏ hoặc đen",
+        "Ho ra hoặc nôn ra máu",
+        "Đau đầu, yếu sức"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Ibuprofen và bạch quả để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 29,
+    "drug_id": 18,
+    "herb_id": 23,
+    "interaction": {
+      "mechanism": "Vỏ liễu trắng có thể gây kích ứng dạ dày, gây dị ứng hoặc làm tăng nguy cơ chảy máu kết hợp với thuốc chống viêm không steroid (NSAID)",
+      "possible_consequences": [
+        "Tăng độc tính nghiêm trọng lên dạ dày và thận"
+      ],
+      "recommendation": "Tránh sử dụng đồng thời; nên tham khảo ý kiến bác sĩ về thuốc thay thế"
+    }
+  },
+  {
+    "interaction_id": 30,
+    "drug_id": 19,
+    "herb_id": 13,
+    "interaction": {
+      "mechanism": "Khổ qua chứa các hoạt chất tương tự insulin; việc kết hợp với insulin có thể khiến đường huyết tụt xuống mức nguy hiểm, gây hôn mê hoặc co giật.",
+      "possible_consequences": [
+        "Gây hạ đường huyết quá mức"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Insulin và khổ qua để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 31,
+    "drug_id": 19,
+    "herb_id": 18,
+    "interaction": {
+      "mechanism": "Nhân sâm làm tăng độ nhạy insulin ngoại sinh. Dẫn đến hôn mê hạ đường huyết cấp tính do đường huyết sụt giảm kịch sàn.",
+      "possible_consequences": [
+        "Hạ đường huyết",
+        "Đau đầu, chóng mặt, buồn ngủ",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Insulin và nhân sâm để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 32,
+    "drug_id": 20,
+    "herb_id": 3,
+    "interaction": {
+      "mechanism": "Ban âu cảm ứng enzyme CYP3A4, làm nồng độ Ivabradine trong máu giảm hơn 60%. Thuốc mất hiệu lực kiểm soát nhịp tim, khiến tình trạng suy tim trở nặng đột ngột.",
+      "possible_consequences": [
+        "Giảm nồng độ và tác dụng của Ivabradine trong máu "
+      ],
+      "recommendation": "Tránh hoặc hạn chế tiêu thụ Ban âu trong khi đang điều trị bằng Ivabradine"
+    }
+  },
+  {
+    "interaction_id": 33,
+    "drug_id": 21,
+    "herb_id": 22,
+    "interaction": {
+      "mechanism": "Trà xanh ức chế protein vận chuyển OATP, làm giảm nồng độ thuốc tới hơn 70%. Huyết áp tăng vọt bất ngờ gây đột quỵ.",
+      "possible_consequences": [
+        "Giảm nồng độ và tác dụng của Lisinopril trong máu "
+      ],
+      "recommendation": "Tránh hoặc hạn chế tiêu thụ trà xanh trong khi đang điều trị bằng Lisinopril"
+    }
+  },
+  {
+    "interaction_id": 34,
+    "drug_id": 22,
+    "herb_id": 13,
+    "interaction": {
+      "mechanism": "Gây hạ đường huyết hiệp đồng. Nồng độ đường trong máu tụt sâu dưới ngưỡng an toàn (Hypoglycemia), gây vã mồ hôi, bủn rủn tay chân.",
+      "possible_consequences": [
+        "Gây hạ đường huyết quá mức",
+        "Nhìn mờ, run rẩy",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Metformin và khổ qua để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 35,
+    "drug_id": 22,
+    "herb_id": 18,
+    "interaction": {
+      "mechanism": "Cả hai cùng tác động lên đường huyết. Gây ra những cơn hạ đường huyết kịch phát, vã mồ hôi, co giật và hôn mê sâu.",
+      "possible_consequences": [
+        "Hạ đường huyết",
+        "Đau đầu, chóng mặt, buồn ngủ",
+        "Đổ mồ hôi, tim đập nhanh"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời Metformin và nhân sâm để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 36,
+    "drug_id": 23,
+    "herb_id": 7,
+    "interaction": {
+      "mechanism": "Echinacea có tác dụng kích thích miễn dịch. Do đó, echinacea có thể đối kháng với tác dụng của các thuốc ức chế miễn dịch như Methotrexate.",
+      "possible_consequences": [
+        "Làm mất tác dụng điều trị của Methotrexate do cơ chế đối kháng"
+      ],
+      "recommendation": "Tránh sử dụng đồng thời; tuyệt đối không tự ý dùng các sản phẩm tăng cường miễn dịch khi đang điều trị bằng Methotrexate"
+    }
+  },
+  {
+    "interaction_id": 37,
+    "drug_id": 24,
+    "herb_id": 22,
+    "interaction": {
+      "mechanism": "Uống trà xanh thường xuyên làm giảm hấp thu nadolol ở ruột (~76%), khiến thuốc mất tác dụng kiểm soát huyết áp và nhịp tim.",
+      "possible_consequences": [
+        "Giảm đáng kể nồng độ Nadolol trong cơ thể "
+      ],
+      "recommendation": "Tránh hoặc hạn chế tiêu thụ trà xanh trong khi đang điều trị bằng Nadolol"
+    }
+  },
+  {
+    "interaction_id": 38,
+    "drug_id": 25,
+    "herb_id": 5,
+    "interaction": {
+      "mechanism": "Cam thảo làm giảm đào thải và tăng độc tính của Corticoid, đồng thời gây giữ nước và hạ Kali máu. Gây phù nề, tăng huyết áp và loét dạ dày.",
+      "possible_consequences": [
+        "Tăng huyết áp",
+        "Giữ nước, giữ muối "
+      ],
+      "recommendation": "Tránh hoặc hạn chế tiêu thụ cam thảo trong khi đang điều trị bằng prednisolone"
+    }
+  },
+  {
+    "interaction_id": 39,
+    "drug_id": 26,
+    "herb_id": 19,
+    "interaction": {
+      "mechanism": "Nước ép bưởi ức chế enzyme chuyển hóa statin ở gan, làm nồng độ simvastatin tăng lên gấp nhiều lần (có thể hơn 10 lần), gây độc cho gan và cơ.",
+      "possible_consequences": [
+        "Giảm cholesterol và làm tăng tác dụng phụ của simvastatin"
+      ],
+      "recommendation": "Không khuyến nghị sử dụng đồng thời nước ép bưởi và simvastatin, có thể thay nước ép cam thay cho nước ép bưởi"
+    }
+  },
+  {
+    "interaction_id": 40,
+    "drug_id": 26,
+    "herb_id": 14,
+    "interaction": {
+      "mechanism": "Men gạo đỏ chứa Monacolin K bản chất là Lovastatin. Uống chung gây quá liều statin nặng, tiêu cơ vân và suy thận cấp.",
+      "possible_consequences": [
+        "Yếu, tê, đau, nóng rát hoặc ngứa ran ở tay, chân"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời simvastatin và men gạo đỏ để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 41,
+    "drug_id": 26,
+    "herb_id": 3,
+    "interaction": {
+      "mechanism": "St John’s wort làm tăng quá trình chuyển hóa, dẫn đến giảm nồng độ thuốc trong huyết tương và có khả năng làm giảm hiệu quả điều trị.",
+      "possible_consequences": [
+        "Tăng cholesterol máu "
+      ],
+      "recommendation": "Hạn chế sử dụng St.John's Wort cùng với Simvastatin. Cần báo cáo với bác sĩ để theo dõi các chỉ số."
+    }
+  },
+  {
+    "interaction_id": 42,
+    "drug_id": 26,
+    "herb_id": 22,
+    "interaction": {
+      "mechanism": "Chiết xuất trà xanh có thể ức chế protein vận chuyển thuốc P-gp, làm tăng nồng độ simvastatin trong máu, tăng tác dụng phụ gây đau cơ, tổn thương gan.",
+      "possible_consequences": [
+        "Tiêu cơ vân",
+        "Đau cơ, đau nhức hoặc yếu cơ",
+        "Sốt, mệt mỏi, buồn nôn, sưng khớp",
+        "Chảy máu, bầm tím bất thường",
+        "Phát ban da, ngứa",
+        "Vàng da, vàng mắt"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời simvastatin và trà xanh để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 43,
+    "drug_id": 27,
+    "herb_id": 5,
+    "interaction": {
+      "mechanism": "Thuốc Tây đã giữ Kali, nếu bổ sung thêm từ chuối sứ/hột sẽ gây tăng Kali máu (Hyperkalemia), dẫn đến ngừng tim đột ngột",
+      "possible_consequences": [
+        "Tăng Kali huyết gây rối loạn nhịp tim nguy hiểm"
+      ],
+      "recommendation": "Hạn chế ăn lượng lớn chuối và xét nghiệm điện giải đồ định kỳ"
+    }
+  },
+  {
+    "interaction_id": 44,
+    "drug_id": 28,
+    "herb_id": 16,
+    "interaction": {
+      "mechanism": "Curcumin ức chế enzyme chuyển hóa tại gan, làm tích tụ thuốc Tacrolimus trong máu, đẩy nhanh quá trình suy thận cấp.",
+      "possible_consequences": [
+        "Tăng nồng độ và độc tính của Tacrolimus"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng nghệ để theo dõi nồng độ thuốc và điều chỉnh liều lượng"
+    }
+  },
+  {
+    "interaction_id": 45,
+    "drug_id": 29,
+    "herb_id": 21,
+    "interaction": {
+      "mechanism": "Hoạt chất trong tỏi có tác dụng làm loãng máu, nếu dùng cùng warfarin sẽ làm tăng hiệu lực chống đông, dẫn đến bầm tím, xuất huyết.",
+      "possible_consequences": [
+        "Chóng mặt, choáng váng",
+        "Phân đỏ hoặc đen",
+        "Ho ra hoặc nôn ra máu",
+        "Đau đầu, yếu sức"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời warfarin và tỏi để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 46,
+    "drug_id": 29,
+    "herb_id": 2,
+    "interaction": {
+      "mechanism": "Bạch quả có tác dụng ức chế kết tập tiểu cầu, khi dùng cùng warfarin sẽ cộng hưởng hiệu ứng “loãng máu”, làm tăng nguy cơ xuất huyết nghiêm trọng.",
+      "possible_consequences": [
+        "Chóng mặt, choáng váng",
+        "Phân đỏ hoặc đen",
+        "Ho ra hoặc nôn ra máu",
+        "Đau đầu, yếu sức"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời warfarin và bạch quả để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 47,
+    "drug_id": 29,
+    "herb_id": 18,
+    "interaction": {
+      "mechanism": "Nhân sâm thúc đẩy chuyển hóa Warfarin và ảnh hưởng sự đông máu, khiến chỉ số INR giảm (máu đông nhanh hơn), dẫn tới nguy cơ hình thành cục máu đông.",
+      "possible_consequences": [
+        "Va đập nhỏ có thể gây tụ máy dưới da, khó tan hết "
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ về việc sử dụng đồng thời warfarin và nhân sâm để bác sĩ theo dõi các chỉ sổ và điều chỉnh liều lượng "
+    }
+  },
+  {
+    "interaction_id": 48,
+    "drug_id": 29,
+    "herb_id": 21,
+    "interaction": {
+      "mechanism": "Trà xanh chứa lượng lớn Vitamin K, hoạt chất này đối kháng trực tiếp với cơ chế hoạt động của Warfarin, làm chỉ số INR giảm sâu.",
+      "possible_consequences": [
+        "Giảm tác dụng chống đông của Warfarin, tăng nguy cơ huyết khối"
+      ],
+      "recommendation": "Cần duy trì lượng tiêu thụ ổn định và báo bác sĩ để xét nghiệm INR thường xuyên"
+    }
+  },
+  {
+    "interaction_id": 49,
+    "drug_id": 29,
+    "herb_id": 6,
+    "interaction": {
+      "mechanism": "Cỏ cà rinh hiệp đồng ức chế tiểu cầu và đẩy Warfarin ra khỏi protein liên kết. Gây chảy máu ồ ạt không thể kiểm soát.",
+      "possible_consequences": [
+        "Tăng nguy cơ xuất huyết nghiêm trọng"
+      ],
+      "recommendation": "Cần phải báo cáo với bác sĩ để theo dõi sát sao chỉ số INR và giảm liều Warfarin"
+    }
+  },
+  {
+    "interaction_id": 50,
+    "drug_id": 29,
+    "herb_id": 10,
+    "interaction": {
+      "mechanism": "Chiết xuất đậu nành thủy phân ức chế các isoenzyme cytochrome P450 (CYP2C9 và CYP3A4) dẫn đến hiệu quả chống đông máu của warfarin giảm.",
+      "possible_consequences": [
+        "Gây mất ổn định chỉ số đông máu INR"
+      ],
+      "recommendation": "Duy trì lượng ăn ổn định hàng ngày, tránh thay đổi đột ngột và báo bác sĩ theo dõi"
+    }
+  }
+]
