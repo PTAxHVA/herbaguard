@@ -1,4 +1,95 @@
-{
-    "herb_id": 1,
-    "aliases": ["nhân sâm", "sâm", "hồng sâm", "panax ginseng", "ginseng"]
-}
+[
+    {
+        "herb_id": 1,
+        "aliases": ["bạc hà", "húng lủi", "peppermint", "mentha", "piperita"]
+    },
+    {
+        "herb_id": 2,
+        "aliases": ["bạch quả", "ngân hạnh", "ginkgo biloba", "ginkgo tree", "maidenhair tree"]
+    },
+    {
+        "herb_id": 3,
+        "aliases": ["ban âu", "cỏ thánh John", "Hypericum perforatum", "St. John’s wort"]
+    },
+    {
+        "herb_id": 4,
+        "aliases": ["cam thảo", "glycyrrhiza glabra", "licorice"]
+    },
+    {
+        "herb_id": 5,
+        "aliases": ["chuối sứ", "chuối chát", "chuối sứ", "chuối hột", "musa balbisiana", "musa moko", "wild banana", "pisang awak"]
+    },
+    {
+        "herb_id": 6,
+        "aliases": ["cỏ cà rinh", "hồ lô ba", "khổ đậu", "trigonella foenum-graecum", "fenugreek"]
+    },
+    {
+        "herb_id": 7,
+        "aliases": ["cúc dại Bắc Mỹ", "hoa nón", "echinacea purpurea", "echinacea", "purple coneflower"]
+    },
+    {
+        "herb_id": 8,
+        "aliases": ["dầu cá", "fish oil", "omega-3 fatty acids"]
+    },
+    {
+        "herb_id": 9,
+        "aliases": ["dây thìa canh", "cây dây muôi", "dây lõa ti",  "gymnema sylvestre", "gymnema"]
+    },
+    {
+        "herb_id": 10,
+        "aliases": ["đan sâm", "huyết sâm", "xích sâm", "salvia miltiorrhiza", "red sage", "danshen"]
+    },
+    {
+        "herb_id": 11,
+        "aliases": ["đậu nành", "đỗ tương", "glycine max", "soybean", "soy"]
+    },
+    {
+        "herb_id": 12,
+        "aliases": ["gừng", "zingiber officinale", "ginger"]
+    },
+    {
+        "herb_id": 13,
+        "aliases": ["khổ qua", "mướp đắng", "momordica charantia", "bitter melon", "bitter gourd"]
+    },
+    {
+        "herb_id": 14,
+        "aliases": ["men gạo đỏ", "gạo đỏ", "hông khúc", "monascus purpureus", "red yeast rice"]
+    },
+    {
+        "herb_id": 15,
+        "aliases": ["nấm linh chi", "ganoderma lucidum", "reishi mushroom", "lingzhi"]
+    },
+    {
+        "herb_id": 16,
+        "aliases": ["nghệ", "khương hoàng" ,"curcuma longa", "turmeric"]
+    },
+    {
+        "herb_id": 17,
+        "aliases": ["nha đam", "lô hội", "long tu", "aloe vera"]
+    },
+    {
+        "herb_id": 18,
+        "aliases": ["nhân sâm", "panax ginseng", "ginseng", "asian ginseng"]
+    },
+    {
+        "herb_id": 19,
+        "aliases": ["bưới chùm", "bười đắng", "citrus paradisi", "grapefruit"]
+    },
+    {
+        "herb_id": 20,
+        "aliases": ["rượu", "cồn", "ethanol", "alcohol"]
+    },
+    {
+        "herb_id": 21,
+        "aliases": ["tỏi", "allium sativum", "garlic"]
+    },
+    {
+        "herb_id": 22,
+        "aliases": ["trà xanh", "chè xanh", "camellia sinensis", "green tea"]
+    },
+    {
+        "herb_id": 23,
+        "aliases": ["vỏ liễu trắng", "salix alba", "white willow bark"]
+    }
+]
+
