@@ -1,0 +1,261 @@
+/* =========================================================
+   HERBAGUARD WEB APP - BẢNG KIỂU CHÍNH (MAIN STYLESHEET)
+   ========================================================= */
+
+/* ===== 1. BIẾN MÀU SẮC (CSS VARIABLES) ===== */
+:root {
+    /* Tông màu chính (Primary) - Xanh Ngọc/Emerald */
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-200: #a7f3d0;
+    --emerald-300: #6ee7b7;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --teal-600: #0d9488;
+    
+    /* Tông màu xám (Neutral) - Slate */
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+    
+    /* Màu cảnh báo/Chức năng (Semantic) */
+    --red-50: #fef2f2;
+    --red-100: #fee2e2;
+    --red-500: #ef4444;
+    --red-600: #dc2626;
+    --blue-50: #eff6ff;
+    --blue-500: #3b82f6;
+    --amber-50: #fffbeb;
+    --amber-500: #f59e0b;
+    --white: #ffffff;
+}
+
+/* ===== 2. THIẾT LẬP CƠ BẢN (RESET & BASE) ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: var(--slate-50); 
+    color: var(--slate-800);
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: 80px; /* Chừa chỗ cho Bottom Nav trên Mobile */
+}
+::-webkit-scrollbar { width: 0px; background: transparent; }
+
+/* ===== 3. THANH ĐIỀU HƯỚNG TRÊN CÙNG (TOP NAVBAR) ===== */
+.top-navbar { background: var(--white); box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 40; }
+.nav-container { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.logo-group { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.logo-icon { width: 32px; height: 32px; background: var(--emerald-500); border-radius: 8px; color: var(--white) ; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px;}
+
+.desktop-menu { display: none; gap: 32px; }
+.desktop-menu a { text-decoration: none; color: var(--slate-500); font-weight: 500; transition: color 0.2s; padding-bottom: 4px; border-bottom: 2px solid transparent; }
+.desktop-menu a:hover { color: var(--emerald-500); }
+.desktop-menu a.active { color: var(--emerald-600); font-weight: 600; border-color: var(--emerald-600); }
+
+.user-group { display: flex; align-items: center; gap: 16px; }
+.btn-icon { background: none; border: none; color: var(--slate-400); font-size: 20px; cursor: pointer; position: relative;}
+.btn-icon:hover { color: var(--emerald-500); }
+.notification-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: var(--red-500); border-radius: 50%; border: 2px solid var(--white);}
+.avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--slate-200); }
+.user-info { display: none; text-align: left; padding-left: 12px; border-left: 1px solid var(--slate-200); }
+.user-info p:first-child { font-size: 12px; color: var(--slate-500); font-weight: 500; margin-bottom: 2px; }
+.user-info p:last-child { font-size: 14px; font-weight: 700; color: var(--slate-800); }
+
+/* ===== 4. LAYOUT CHÍNH (MAIN LAYOUT) ===== */
+.main-content { max-width: 1280px; margin: 0 auto; padding: 24px 16px; }
+.page-header { text-align: center; margin-bottom: 24px; }
+.page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.page-header p { color: var(--slate-500); font-size: 14px; }
+
+/* ===== 5. COMPONENT: HERO BANNER (Dùng ở Trang Chủ) ===== */
+.hero-camera-action { background: var(--white); border-radius: 32px; padding: 48px 24px; text-align: center; border: 2px dashed var(--emerald-300); box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.1); margin-bottom: 32px; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;}
+
+.hero-camera-action:hover { background: var(--emerald-50); border-color: var(--emerald-500); transform: translateY(-4px); box-shadow: 0 25px 30px -5px rgba(16, 185, 129, 0.2);}
+
+.camera-viewfinder {width: 120px; height: 120px; background: linear-gradient(135deg, var(--emerald-500), var(--teal-600)); border-radius: 32px; margin: 0 auto 24px auto;display: flex;align-items: center;justify-content: center;position: relative;box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);overflow: hidden;}
+
+.camera-icon-main { font-size: 48px; color: var(--white); z-index: 2;}
+
+/* Hiệu ứng tia laser quét */
+.scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.8); animation: scan-move 2.5s infinite ease-in-out; z-index: 1;}
+
+@keyframes scan-move {
+    0% { top: 5%; opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { top: 95%; opacity: 0; }
+}
+.hero-camera-action h2 { font-size: 26px; font-weight: 800; color: var(--slate-800); margin-bottom: 12px;}
+
+.hero-camera-action p { font-size: 16px; color: var(--slate-500); max-width: 450px; margin: 0 auto; line-height: 1.6; }
+/* ===== COMPONENT: SMART ALERTS (BẢNG TIN AI) ===== */
+.smart-alerts-section {
+    margin-bottom: 32px;
+}
+
+.alert-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Biến thể màu Vàng (Cảnh báo nhẹ) */
+.alert-box.warning {
+    background: var(--amber-50);
+    border: 1px solid var(--amber-100);
+}
+.alert-box.warning .alert-icon {
+    color: var(--amber-500);
+    background: var(--white);
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+
+/* Biến thể màu Xanh (Thông tin hữu ích) */
+.alert-box.info {
+    background: var(--blue-50);
+    border: 1px solid var(--blue-100);
+}
+.alert-box.info .alert-icon {
+    color: var(--blue-500);
+    background: var(--white);
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+
+/* Phần nội dung chữ */
+.alert-content {
+    flex-grow: 1; /* Cực kỳ quan trọng */
+}
+.alert-content h4 {
+    font-size: 15px; font-weight: 700; color: var(--slate-800); margin-bottom: 4px;
+}
+.alert-content p {
+    font-size: 13px; color: var(--slate-600); line-height: 1.4;
+}
+
+/* Nút bấm nhỏ xíu bên trong Alert */
+.btn-action-small {
+    background: var(--white);
+    border: 1px solid var(--amber-200);
+    color: var(--amber-600);
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+.btn-action-small:hover {
+    background: var(--amber-500);
+    color: var(--white);
+}
+
+/* ===== 7. COMPONENT: CAMERA OCR (Dùng ở trang Check) ===== */
+.scanner-card { background: var(--white); border-radius: 24px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--slate-100); margin-bottom: 24px; cursor: pointer; transition: box-shadow 0.2s; }
+.scanner-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.scanner-inner { border: 2px dashed var(--emerald-300); background: rgba(236, 253, 245, 0.5); border-radius: 16px; padding: 48px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: background 0.2s; }
+.scanner-card:hover .scanner-inner { background: var(--emerald-50); }
+.scanner-icon { width: 80px; height: 80px; background: var(--emerald-100); border-radius: 50%; color: var(--emerald-500); display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 16px; animation: pulse-soft 2s infinite ease-in-out; }
+
+@keyframes pulse-soft {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* ===== 8. COMPONENT: INPUT & BUTTON ===== */
+.input-group { display: flex; gap: 8px; margin-bottom: 24px; width: 100%;}
+.search-wrapper { position: relative; flex-grow: 1; }
+.search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--slate-400); }
+.search-wrapper input { width: 100%; background: var(--white); border: 1px solid var(--slate-200); border-radius: 16px; padding: 16px 48px; font-size: 15px; font-family: inherit; font-weight: 500; color: var(--slate-800); outline: none; transition: all 0.2s; }
+.search-wrapper input:focus { border-color: var(--emerald-500); box-shadow: 0 0 0 2px var(--emerald-100); }
+.btn-voice { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background: var(--slate-100); border: none; border-radius: 12px; color: var(--slate-400); cursor: pointer; transition: all 0.2s; }
+.btn-voice:hover { background: var(--emerald-100); color: var(--emerald-600); }
+
+.btn-primary { background: var(--emerald-600); color: var(--white); border: none; border-radius: 16px; padding: 0 24px; font-weight: 700; font-size: 15px; cursor: pointer; transition: background 0.2s; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px;}
+.btn-primary:hover { background: var(--emerald-700); }
+
+.btn-main-action { width: 100%; background: linear-gradient(to right, var(--emerald-500), var(--teal-600)); color: var(--white); border: none; border-radius: 16px; padding: 20px; font-size: 18px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); transition: all 0.2s; }
+.btn-main-action:hover { filter: brightness(1.1); transform: translateY(-2px);}
+
+/* ===== 9. COMPONENT: DANH SÁCH THUỐC (MEDICINE LIST) ===== */
+.section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+.section-header h2 { font-size: 20px; font-weight: 700; }
+.section-header h3 { font-size: 18px; font-weight: 700; }
+.text-link { color: var(--emerald-600); font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; border: none; background: none;}
+.text-link:hover { text-decoration: underline; }
+.text-danger { color: var(--red-500); }
+
+.medicine-list { display: flex; flex-direction: column; gap: 12px; }
+.medicine-card { background: var(--white); border: 1px solid var(--slate-100); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.card-left { display: flex; align-items: center; gap: 16px; }
+.icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+.icon-box.blue { background: var(--blue-50); color: var(--blue-500); }
+.icon-box.green { background: var(--emerald-50); color: var(--emerald-500); }
+.card-info h4 { font-size: 15px; font-weight: 700; }
+.card-info p { font-size: 12px; color: var(--slate-500); margin-top: 2px; }
+.card-time { font-size: 14px; font-weight: 700; color: var(--emerald-600); background: var(--emerald-50); padding: 6px 12px; border-radius: 8px;}
+
+.btn-remove { width: 40px; height: 40px; background: var(--red-50); color: var(--red-500); border: none; border-radius: 12px; font-size: 18px; cursor: pointer; transition: all 0.2s; }
+.btn-remove:hover { background: var(--red-500); color: var(--white); }
+
+/* Vạch phân cách */
+.divider { display: flex; align-items: center; margin-bottom: 24px; }
+.divider::before, .divider::after { content: ''; flex-grow: 1; border-top: 1px solid var(--slate-200); }
+.divider span { padding: 0 16px; font-size: 14px; color: var(--slate-400); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ===== 10. OVERLAY LOADING ẢO ===== */
+.loading-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 50; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--white); }
+.loading-overlay.hidden { display: none; }
+.loading-overlay i { font-size: 48px; color: var(--emerald-300); margin-bottom: 16px; }
+.loading-overlay h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.loading-overlay p { color: var(--slate-300); font-size: 14px; }
+
+/* ===== 11. THANH ĐIỀU HƯỚNG DƯỚI CÙNG (BOTTOM NAV) ===== */
+.bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--white); border-top: 1px solid var(--slate-200); display: flex; justify-content: space-around; padding: 12px 8px; z-index: 40; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.05); }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--slate-400); text-decoration: none; transition: color 0.2s; width: 64px;}
+.nav-item i { font-size: 22px; }
+.nav-item span { font-size: 10px; font-weight: 600; }
+.nav-item.active { color: var(--emerald-600); }
+.nav-item.active span { font-weight: 700; }
+.nav-item:hover { color: var(--emerald-600); }
+
+/* ===== 12. RESPONSIVE CHO MÁY TÍNH (DESKTOP) ===== */
+@media (min-width: 768px) {
+    body { padding-bottom: 0; }
+    .top-navbar { height: 80px; }
+    .logo-icon { width: 40px; height: 40px; border-radius: 12px; font-size: 20px; }
+    .logo-text { font-size: 24px; }
+    .desktop-menu { display: flex; }
+    .user-info { display: block; }
+    .avatar { width: 40px; height: 40px; }
+    
+    .main-content { padding: 40px 24px; }
+    .page-header h1 { font-size: 30px; }
+    .page-header p { font-size: 16px; }
+    
+    .hero-banner { flex-direction: row; align-items: center; justify-content: space-between; padding: 48px; border-radius: 32px;}
+    .hero-banner h1 { font-size: 48px; }
+    .hero-banner p { font-size: 18px; max-width: 500px;}
+    .hero-bg-icon { font-size: 240px; right: 20px; bottom: -40px; }
+    
+    .feature-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 48px;}
+    .feature-card { padding: 24px; text-align: left; display: flex; flex-direction: column; align-items: flex-start;}
+    .feature-icon { margin: 0 0 20px 0; width: 64px; height: 64px; font-size: 32px; border-radius: 20px;}
+    .feature-card h3 { font-size: 20px; margin-bottom: 8px;}
+    .feature-card p { display: block; }
+    
+    .bottom-nav { display: none; }
+}

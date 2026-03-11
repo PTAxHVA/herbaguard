@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HerbaGuard - Kết Quả Tương Tác</title>
+
+    <link rel="stylesheet" href="styles.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        .alert-card { border-radius: 24px; padding: 32px 24px; text-align: center; margin-bottom: 24px; color: var(--white); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
+        .alert-card.danger { background: linear-gradient(135deg, var(--red-500), #b91c1c); }
+        .alert-card.warning { background: linear-gradient(135deg, var(--amber-500), #b45309); }
+        .alert-card.safe { background: linear-gradient(135deg, var(--emerald-500), var(--teal-600)); }
+        
+        .alert-icon { font-size: 64px; margin-bottom: 16px; animation: pulse-alert 1.5s infinite; }
+        .alert-card h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+        .alert-card p { font-size: 16px; opacity: 0.9; }
+
+        .details-box { background: var(--white); border-radius: 20px; padding: 24px; border: 1px solid var(--slate-200); margin-bottom: 24px; }
+        .details-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--slate-800); }
+        .details-box p { font-size: 15px; color: var(--slate-600); line-height: 1.6; }
+
+        .btn-danger-outline { border: 2px solid var(--red-500); color: var(--red-600); background: transparent; border-radius: 16px; padding: 16px 24px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; transition: all 0.2s; }
+        .btn-danger-outline:hover { background: var(--red-50); }
+        .btn-danger-filled { background: var(--red-500); color: var(--white); border: none; border-radius: 16px; padding: 16px 24px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: all 0.2s; }
+        .btn-danger-filled:hover { background: var(--red-600); }
+        
+        .action-group { display: flex; gap: 12px; margin-top: 24px; }
+        @media (max-width: 640px) { .action-group { flex-direction: column; } }
+
+        @keyframes pulse-alert {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="top-navbar">
+        <div class="nav-container">
+            <div class="logo-group" onclick="window.location.href='index.html'">
+                <button class="btn-icon" style="margin-right: 8px; color: var(--slate-800);"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="logo-text">Kết Quả Phân Tích</span>
+            </div>
+            
+            <div class="user-group">
+                <button class="btn-icon">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content" style="max-width: 768px;">
+        
+        <div class="alert-card danger">
+            <div class="alert-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2>NGUY HIỂM CAO</h2>
+            <p>Tuyệt đối không sử dụng chung các loại thuốc này!</p>
+        </div>
+
+        <div class="medicine-section">
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--slate-500); text-transform: uppercase;">Thuốc được phân tích</h3>
+            <div class="medicine-list">
+                <div class="medicine-card" style="border-left: 4px solid var(--red-500);">
+                    <div class="card-left">
+                        <div class="icon-box" style="background: var(--slate-100); color: var(--slate-500);"><i class="fa-solid fa-capsules"></i></div>
+                        <div class="card-info">
+                            <h4 style="font-size: 16px;">Warfarin 5mg</h4>
+                            <p>Thuốc chống đông máu</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="medicine-card" style="border-left: 4px solid var(--red-500);">
+                    <div class="card-left">
+                        <div class="icon-box" style="background: var(--slate-100); color: var(--slate-500);"><i class="fa-solid fa-pills"></i></div>
+                        <div class="card-info">
+                            <h4 style="font-size: 16px;">Aspirin 81mg</h4>
+                            <p>Thuốc giảm đau, kháng viêm</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="details-box">
+            <h3>Tại sao lại nguy hiểm?</h3>
+            <p>
+                Cả <strong>Warfarin</strong> và <strong>Aspirin</strong> đều có tác dụng làm loãng máu. Khi uống chung, chúng sẽ làm tăng tác dụng này lên gấp nhiều lần.
+                <br><br>
+                <strong>Hậu quả:</strong> Điều này có thể dẫn đến nguy cơ chảy máu trong (xuất huyết) rất nghiêm trọng, khó cầm máu ngay cả với những vết thương nhỏ.
+            </p>
+        </div>
+
+        <div class="action-group">
+            <button class="btn-danger-outline">
+                <i class="fa-solid fa-file-medical"></i> Xem Chi Tiết Y Khoa
+            </button>
+            <button class="btn-danger-filled">
+                <i class="fa-solid fa-phone-volume"></i> Gọi Bác Sĩ Ngay
+            </button>
+        </div>
+
+        <div style="margin-top: 32px; text-align: center;">
+            <button class="text-link" onclick="window.location.href='check.html'" style="color: var(--slate-500);">
+                <i class="fa-solid fa-rotate-left"></i> Quét lại thuốc khác
+            </button>
+        </div>
+
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>

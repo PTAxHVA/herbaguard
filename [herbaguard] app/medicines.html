@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HerbaGuard - Tủ Thuốc Của Tôi</title>
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+   <nav class="top-navbar">
+        <div class="nav-container">
+            <div class="logo-group" id="nav-logo">
+                <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+                <span class="logo-text">HerbaGuard</span>
+            </div>
+
+            <div class="desktop-menu">
+                <a href="index.html" >Trang Chủ</a>
+                <a href="check.html">Quét Thuốc</a>
+                <a href="medicines.html" class="active">Tủ Thuốc</a>
+            </div>
+
+            <div class="user-group">
+                <button class="btn-icon" id="btn-notification">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <a href="settings.html">
+                    <img  src="https://ui-avatars.com/api/?name=Louis&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
+                </a>
+                <div class="user-info">
+                    <p id="greeting-text">Xin chào,</p>
+                    <p>Louis Tran</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content" style="max-width: 800px;">
+        
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; text-align: left;">
+            <div>
+                <h1 style="margin-bottom: 4px;">Tủ Thuốc Của Tôi</h1>
+                <p>Quản lý danh sách và lịch uống thuốc hàng ngày.</p>
+            </div>
+            <button class="btn-primary" style="height: 44px; padding: 0 16px; border-radius: 12px;">
+                <i class="fa-solid fa-plus"></i> Thêm Thuốc
+            </button>
+        </div>
+
+        <div class="medicine-section">
+            <div class="medicine-list">
+                
+                <div class="medicine-card" style="flex-direction: column; align-items: stretch; gap: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="card-left">
+                            <div class="icon-box blue"><i class="fa-regular fa-clock"></i></div>
+                            <div class="card-info">
+                                <h4 style="font-size: 18px;">Paracetamol 500mg</h4>
+                                <p style="font-size: 14px;">1 viên • Sau bữa ăn sáng</p>
+                            </div>
+                        </div>
+                        <span class="card-time" style="font-size: 16px;">08:00 AM</span>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--slate-100); padding-top: 16px;">
+                        <button class="btn-icon" style="color: var(--blue-500); background: var(--blue-50); padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;">
+                            <i class="fa-solid fa-pen"></i> Sửa
+                        </button>
+                        <button class="btn-icon" style="color: var(--red-500); background: var(--red-50); padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;">
+                            <i class="fa-solid fa-trash"></i> Xóa
+                        </button>
+                    </div>
+                </div>
+
+                <div class="medicine-card" style="flex-direction: column; align-items: stretch; gap: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="card-left">
+                            <div class="icon-box green"><i class="fa-solid fa-capsules"></i></div>
+                            <div class="card-info">
+                                <h4 style="font-size: 18px;">Amoxicillin 250mg</h4>
+                                <p style="font-size: 14px;">2 viên • Uống với nhiều nước</p>
+                            </div>
+                        </div>
+                        <span class="card-time" style="font-size: 16px;">12:30 PM</span>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--slate-100); padding-top: 16px;">
+                        <span style="color: var(--amber-500); font-size: 13px; font-weight: 600; background: var(--amber-50); padding: 4px 12px; border-radius: 8px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Sắp hết thuốc (Còn 4 viên)
+                        </span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-icon" style="color: var(--blue-500); background: var(--blue-50); padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon" style="color: var(--red-500); background: var(--red-50); padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <button class="btn-primary" style="width: 100%; background: var(--white); color: var(--slate-700); border: 2px solid var(--slate-200); margin-top: 16px;">
+            <i class="fa-solid fa-file-pdf text-red-500"></i> Xuất danh sách cho Bác sĩ (PDF)
+        </button>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <i class="fa-solid fa-house"></i>
+            <span>Trang Chủ</span>
+        </a>
+        <a href="check.html" class="nav-item">
+            <i class="fa-solid fa-camera"></i>
+            <span>Quét</span>
+        </a>
+        <a href="medicines.html" class="nav-item active">
+            <i class="fa-solid fa-pills"></i>
+            <span>Tủ Thuốc</span>
+        </a>
+        <a href="settings.html" class="nav-item">
+            <i class="fa-regular fa-user"></i>
+            <span>Cá Nhân</span>
+        </a>
+    </nav>
+    <script src="app.js"></script>
+</body>
+</html>
