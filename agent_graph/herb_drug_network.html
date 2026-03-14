@@ -1,0 +1,662 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="herb_1">herb_1</option>
+                                
+                                    <option value="herb_2">herb_2</option>
+                                
+                                    <option value="herb_3">herb_3</option>
+                                
+                                    <option value="herb_4">herb_4</option>
+                                
+                                    <option value="herb_5">herb_5</option>
+                                
+                                    <option value="herb_6">herb_6</option>
+                                
+                                    <option value="herb_7">herb_7</option>
+                                
+                                    <option value="herb_8">herb_8</option>
+                                
+                                    <option value="herb_9">herb_9</option>
+                                
+                                    <option value="herb_10">herb_10</option>
+                                
+                                    <option value="herb_11">herb_11</option>
+                                
+                                    <option value="herb_12">herb_12</option>
+                                
+                                    <option value="herb_13">herb_13</option>
+                                
+                                    <option value="herb_14">herb_14</option>
+                                
+                                    <option value="herb_15">herb_15</option>
+                                
+                                    <option value="herb_16">herb_16</option>
+                                
+                                    <option value="herb_17">herb_17</option>
+                                
+                                    <option value="herb_18">herb_18</option>
+                                
+                                    <option value="herb_19">herb_19</option>
+                                
+                                    <option value="herb_20">herb_20</option>
+                                
+                                    <option value="herb_21">herb_21</option>
+                                
+                                    <option value="herb_22">herb_22</option>
+                                
+                                    <option value="herb_23">herb_23</option>
+                                
+                                    <option value="drug_1">drug_1</option>
+                                
+                                    <option value="drug_2">drug_2</option>
+                                
+                                    <option value="drug_3">drug_3</option>
+                                
+                                    <option value="drug_4">drug_4</option>
+                                
+                                    <option value="drug_5">drug_5</option>
+                                
+                                    <option value="drug_6">drug_6</option>
+                                
+                                    <option value="drug_7">drug_7</option>
+                                
+                                    <option value="drug_8">drug_8</option>
+                                
+                                    <option value="drug_9">drug_9</option>
+                                
+                                    <option value="drug_10">drug_10</option>
+                                
+                                    <option value="drug_11">drug_11</option>
+                                
+                                    <option value="drug_12">drug_12</option>
+                                
+                                    <option value="drug_13">drug_13</option>
+                                
+                                    <option value="drug_14">drug_14</option>
+                                
+                                    <option value="drug_15">drug_15</option>
+                                
+                                    <option value="drug_16">drug_16</option>
+                                
+                                    <option value="drug_17">drug_17</option>
+                                
+                                    <option value="drug_18">drug_18</option>
+                                
+                                    <option value="drug_19">drug_19</option>
+                                
+                                    <option value="drug_20">drug_20</option>
+                                
+                                    <option value="drug_21">drug_21</option>
+                                
+                                    <option value="drug_22">drug_22</option>
+                                
+                                    <option value="drug_23">drug_23</option>
+                                
+                                    <option value="drug_24">drug_24</option>
+                                
+                                    <option value="drug_25">drug_25</option>
+                                
+                                    <option value="drug_26">drug_26</option>
+                                
+                                    <option value="drug_27">drug_27</option>
+                                
+                                    <option value="drug_28">drug_28</option>
+                                
+                                    <option value="drug_29">drug_29</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+              <div id="filter-menu" class="card-header">
+                <div class="row no-gutters">
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'item')"
+                            id="select-item"
+                        >
+                        <option value="">Select a network item</option>
+                        <option value="edge">edge</option>
+                        <option value="node">node</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'property')"
+                            id="select-property"
+                        >
+                        <option value="">Select a property...</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            id="select-value"
+                        >
+                        <option value="">Select value(s)...</option>
+                    </select>
+                  </div>
+                  <div class="col-1 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="highlightFilter(filter);">Filter</button>
+                  </div>
+                  <div class="col-2 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="clearFilter(true)">Reset Selection</button>
+                  </div>
+                </div>
+              </div>
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#00ff00", "font": {"color": "white"}, "id": "herb_1", "label": "b\u1ea1c h\u00e0", "shape": "dot", "title": "Type: herb\nID: 1"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_2", "label": "b\u1ea1ch qu\u1ea3", "shape": "dot", "title": "Type: herb\nID: 2"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_3", "label": "ban \u00e2u", "shape": "dot", "title": "Type: herb\nID: 3"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_4", "label": "cam th\u1ea3o", "shape": "dot", "title": "Type: herb\nID: 4"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_5", "label": "chu\u1ed1i s\u1ee9", "shape": "dot", "title": "Type: herb\nID: 5"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_6", "label": "c\u1ecf c\u00e0 rinh", "shape": "dot", "title": "Type: herb\nID: 6"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_7", "label": "c\u00fac d\u1ea1i B\u1eafc M\u1ef9", "shape": "dot", "title": "Type: herb\nID: 7"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_8", "label": "d\u1ea7u c\u00e1", "shape": "dot", "title": "Type: herb\nID: 8"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_9", "label": "d\u00e2y th\u00eca canh", "shape": "dot", "title": "Type: herb\nID: 9"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_10", "label": "\u0111an s\u00e2m", "shape": "dot", "title": "Type: herb\nID: 10"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_11", "label": "\u0111\u1eadu n\u00e0nh", "shape": "dot", "title": "Type: herb\nID: 11"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_12", "label": "g\u1eebng", "shape": "dot", "title": "Type: herb\nID: 12"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_13", "label": "kh\u1ed5 qua", "shape": "dot", "title": "Type: herb\nID: 13"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_14", "label": "men g\u1ea1o \u0111\u1ecf", "shape": "dot", "title": "Type: herb\nID: 14"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_15", "label": "n\u1ea5m linh chi", "shape": "dot", "title": "Type: herb\nID: 15"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_16", "label": "ngh\u1ec7", "shape": "dot", "title": "Type: herb\nID: 16"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_17", "label": "nha \u0111am", "shape": "dot", "title": "Type: herb\nID: 17"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_18", "label": "nh\u00e2n s\u00e2m", "shape": "dot", "title": "Type: herb\nID: 18"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_19", "label": "b\u01b0\u1edbi ch\u00f9m", "shape": "dot", "title": "Type: herb\nID: 19"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_20", "label": "r\u01b0\u1ee3u", "shape": "dot", "title": "Type: herb\nID: 20"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_21", "label": "t\u1ecfi", "shape": "dot", "title": "Type: herb\nID: 21"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_22", "label": "tr\u00e0 xanh", "shape": "dot", "title": "Type: herb\nID: 22"}, {"color": "#00ff00", "font": {"color": "white"}, "id": "herb_23", "label": "v\u1ecf li\u1ec5u tr\u1eafng", "shape": "dot", "title": "Type: herb\nID: 23"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_1", "label": "amiodarone", "shape": "dot", "title": "Type: drug\nID: 1"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_2", "label": "amlodipine", "shape": "dot", "title": "Type: drug\nID: 2"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_3", "label": "antacids", "shape": "dot", "title": "Type: drug\nID: 3"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_4", "label": "aspirin", "shape": "dot", "title": "Type: drug\nID: 4"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_5", "label": "atorvastatin", "shape": "dot", "title": "Type: drug\nID: 5"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_6", "label": "captopril", "shape": "dot", "title": "Type: drug\nID: 6"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_7", "label": "carbamazepine", "shape": "dot", "title": "Type: drug\nID: 7"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_8", "label": "cyclosporine", "shape": "dot", "title": "Type: drug\nID: 8"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_9", "label": "diazepam", "shape": "dot", "title": "Type: drug\nID: 9"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_10", "label": "diclofenac", "shape": "dot", "title": "Type: drug\nID: 10"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_11", "label": "digoxin", "shape": "dot", "title": "Type: drug\nID: 11"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_12", "label": "eplerenone", "shape": "dot", "title": "Type: drug\nID: 12"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_13", "label": "fluoxetine", "shape": "dot", "title": "Type: drug\nID: 13"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_14", "label": "furosemid", "shape": "dot", "title": "Type: drug\nID: 14"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_15", "label": "glibenclamide", "shape": "dot", "title": "Type: drug\nID: 15"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_16", "label": "gliclazide", "shape": "dot", "title": "Type: drug\nID: 16"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_17", "label": "glipizide", "shape": "dot", "title": "Type: drug\nID: 17"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_18", "label": "ibuprofen", "shape": "dot", "title": "Type: drug\nID: 18"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_19", "label": "insulin", "shape": "dot", "title": "Type: drug\nID: 19"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_20", "label": "ivabradine", "shape": "dot", "title": "Type: drug\nID: 20"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_21", "label": "lisinopril", "shape": "dot", "title": "Type: drug\nID: 21"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_22", "label": "metformin", "shape": "dot", "title": "Type: drug\nID: 22"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_23", "label": "methotrexate", "shape": "dot", "title": "Type: drug\nID: 23"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_24", "label": "nadolol", "shape": "dot", "title": "Type: drug\nID: 24"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_25", "label": "prednisolone", "shape": "dot", "title": "Type: drug\nID: 25"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_26", "label": "simvastatin", "shape": "dot", "title": "Type: drug\nID: 26"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_27", "label": "spironolactone", "shape": "dot", "title": "Type: drug\nID: 27"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_28", "label": "tacrolimus", "shape": "dot", "title": "Type: drug\nID: 28"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "drug_29", "label": "warfarin", "shape": "dot", "title": "Type: drug\nID: 29"}]);
+                  edges = new vis.DataSet([{"color": "#FFFF00", "from": "herb_1", "title": "{\n  \"mechanism\": \"S\u1ef1 gia t\u0103ng \u0111\u00e1ng k\u1ec3 n\u1ed3ng \u0111\u1ed9 pH g\u00e2y ra b\u1edfi thu\u1ed1c kh\u00e1ng axit c\u00f3 th\u1ec3 l\u00e0m l\u1edbp m\u00e0ng bao tan trong ru\u1ed9t b\u1ecb h\u00f2a tan s\u1edbm, d\u1eabn \u0111\u1ebfn vi\u1ec7c gi\u1ea3i ph\u00f3ng d\u1ea7u b\u1ea1c h\u00e0 ngay t\u1ea1i d\u1ea1 d\u00e0y. T\u00ecnh tr\u1ea1ng n\u00e0y l\u00e0m t\u0103ng nguy c\u01a1 b\u1ecb \u1ee3 n\u00f3ng khi s\u1eed d\u1ee5ng b\u1ea1c h\u00e0\",\n  \"possible_consequences\": [\n    \"\u1ee2 n\u00f3ng, kh\u00f3 ti\u00eau, bu\u1ed3n n\u00f4n\",\n    \"Gi\u1ea3m t\u00e1c d\u1ee5ng thu\u1ed1c \"\n  ],\n  \"recommendation\": \"N\u1ebfu s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi ph\u1ea3i u\u1ed1ng c\u00e1ch nhau kho\u1ea3ng 2 gi\u1edd. C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Antacids v\u00e0 b\u1ea1c h\u00e0 \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_3"}, {"color": "#FFFF00", "from": "herb_2", "title": "{\n  \"mechanism\": \"B\u1ea1ch qu\u1ea3 thu\u1ed9c nh\u00f3m \u201cho\u1ea1t huy\u1ebft d\u01b0\u1ee1ng n\u00e3o\u201d, khi d\u00f9ng chung NSAID s\u1ebd c\u1ed9ng h\u01b0\u1edfng t\u00e1c d\u1ee5ng \u1ee9c ch\u1ebf ti\u1ec3u c\u1ea7u, l\u00e0m t\u0103ng \u0111\u00e1ng k\u1ec3 nguy c\u01a1 ch\u1ea3y m\u00e1u (xu\u1ea5t huy\u1ebft) \u1edf b\u1ec7nh nh\u00e2n\",\n  \"possible_consequences\": [\n    \"Ch\u1ea3y m\u00e1u, b\u1ea7m t\u00edm b\u1ea5t th\u01b0\u1eddng\",\n    \"Ch\u00f3ng m\u1eb7t, cho\u00e1ng v\u00e1ng\",\n    \"Ph\u00e2n \u0111\u1ecf ho\u1eb7c \u0111en\",\n    \"Ho ra ho\u1eb7c n\u00f4n ra m\u00e1u\",\n    \"\u0110au \u0111\u1ea7u, y\u1ebfu s\u1ee9c\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Diclofenac v\u00e0 b\u1ea1ch qu\u1ea3 \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_10"}, {"color": "#FFFF00", "from": "herb_2", "title": "{\n  \"mechanism\": \"C\u1ea3 NSAID v\u00e0 b\u1ea1ch qu\u1ea3 \u0111\u1ec1u l\u00e0m lo\u00e3ng m\u00e1u, d\u1ec5 g\u00e2y xu\u1ea5t huy\u1ebft. \u0110\u00e3 c\u00f3 b\u00e1o c\u00e1o y khoa v\u1ec1 tr\u01b0\u1eddng h\u1ee3p t\u1eed vong do xu\u1ea5t huy\u1ebft n\u00e3o \u1edf b\u1ec7nh nh\u00e2n d\u00f9ng \u0111\u1ed3ng th\u1eddi ginkgo v\u00e0 ibuprofen\",\n  \"possible_consequences\": [\n    \"Ch\u1ea3y m\u00e1u, b\u1ea7m t\u00edm b\u1ea5t th\u01b0\u1eddng\",\n    \"Ch\u00f3ng m\u1eb7t, cho\u00e1ng v\u00e1ng\",\n    \"Ph\u00e2n \u0111\u1ecf ho\u1eb7c \u0111en\",\n    \"Ho ra ho\u1eb7c n\u00f4n ra m\u00e1u\",\n    \"\u0110au \u0111\u1ea7u, y\u1ebfu s\u1ee9c\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Ibuprofen v\u00e0 b\u1ea1ch qu\u1ea3 \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_18"}, {"color": "#FFFF00", "from": "herb_2", "title": "{\n  \"mechanism\": \"B\u1ea1ch qu\u1ea3 c\u00f3 t\u00e1c d\u1ee5ng \u1ee9c ch\u1ebf k\u1ebft t\u1eadp ti\u1ec3u c\u1ea7u, khi d\u00f9ng c\u00f9ng warfarin s\u1ebd c\u1ed9ng h\u01b0\u1edfng hi\u1ec7u \u1ee9ng \u201clo\u00e3ng m\u00e1u\u201d, l\u00e0m t\u0103ng nguy c\u01a1 xu\u1ea5t huy\u1ebft nghi\u00eam tr\u1ecdng.\",\n  \"possible_consequences\": [\n    \"Ch\u00f3ng m\u1eb7t, cho\u00e1ng v\u00e1ng\",\n    \"Ph\u00e2n \u0111\u1ecf ho\u1eb7c \u0111en\",\n    \"Ho ra ho\u1eb7c n\u00f4n ra m\u00e1u\",\n    \"\u0110au \u0111\u1ea7u, y\u1ebfu s\u1ee9c\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi warfarin v\u00e0 b\u1ea1ch qu\u1ea3 \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_29"}, {"color": "#FFFF00", "from": "herb_3", "title": "{\n  \"mechanism\": \"Ban \u00e2u c\u1ea3m \u1ee9ng enzym gan c\u1ef1c m\u1ea1nh, l\u00e0m thu\u1ed1c Carbamazepine b\u1ecb \u0111\u00e0o th\u1ea3i m\u1ea5t t\u00e1c d\u1ee5ng. G\u00e2y ra c\u00e1c c\u01a1n co gi\u1eadt li\u00ean h\u1ed3i.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m n\u1ed3ng \u0111\u1ed9 v\u00e0 t\u00e1c d\u1ee5ng c\u1ee7a Carbamazepine\"\n  ],\n  \"recommendation\": \"Tr\u00e1nh s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi ho\u1eb7c s\u1eed d\u1ee5ng thu\u1ed1c thay th\u1ebf \"\n}", "to": "drug_7"}, {"color": "#FFFF00", "from": "herb_3", "title": "{\n  \"mechanism\": \"Ban \u00e2u l\u00e0m n\u1ed3ng \u0111\u1ed9 thu\u1ed1c \u1ee9c ch\u1ebf mi\u1ec5n d\u1ecbch r\u01a1i xu\u1ed1ng d\u01b0\u1edbi ng\u01b0\u1ee1ng \u0111i\u1ec1u tr\u1ecb. \u0110\u1ed1i v\u1edbi ng\u01b0\u1eddi gi\u00e0 \u0111\u00e3 thay t\u1ea1ng, \u0111i\u1ec1u n\u00e0y t\u01b0\u01a1ng \u0111\u01b0\u01a1ng v\u1edbi m\u1ed9t \\\"\u00e1n t\u1eed\\\" v\u00ec t\u1ea1ng gh\u00e9p s\u1ebd b\u1ecb c\u01a1 th\u1ec3 \u0111\u00e0o th\u1ea3i ngay l\u1eadp t\u1ee9c.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m n\u1ed3ng \u0111\u1ed9 v\u00e0 t\u00e1c d\u1ee5ng c\u1ee7a Cyclosporine \"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Cyclosporine v\u00e0 Ban \u00e2u \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_8"}, {"color": "#FFFF00", "from": "herb_3", "title": "{\n  \"mechanism\": \"Eplerenone \u0111\u01b0\u1ee3c chuy\u1ec3n h\u00f3a b\u1edfi isoenzyme cytochrome P450 CYP3A4. Do \u0111\u00f3, c\u00e1c ch\u1ea5t g\u00e2y c\u1ea3m \u1ee9ng enzyme n\u00e0y nh\u01b0 St John\u2019s wort s\u1ebd l\u00e0m gi\u1ea3m n\u1ed3ng \u0111\u1ed9 c\u1ee7a thu\u1ed1c trong c\u01a1 th\u1ec3\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m n\u1ed3ng \u0111\u1ed9 v\u00e0 m\u1ea5t t\u00e1c d\u1ee5ng \u0111i\u1ec1u tr\u1ecb c\u1ee7a Eplerenone\"\n  ],\n  \"recommendation\": \"Tr\u00e1nh s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi ho\u1eb7c s\u1eed d\u1ee5ng thu\u1ed1c thay th\u1ebf\"\n}", "to": "drug_12"}, {"color": "#FFFF00", "from": "herb_3", "title": "{\n  \"mechanism\": \"C\u1ea3 hai c\u00f9ng l\u00e0m t\u0103ng n\u1ed3ng \u0111\u1ed9 Serotonin trong n\u00e3o. D\u00f9ng chung d\u1eabn \u0111\u1ebfn H\u1ed9i ch\u1ee9ng Serotonin (v\u00e3 m\u1ed3 h\u00f4i, ti\u00eau ch\u1ea3y, co th\u1eaft c\u01a1, l\u00fa l\u1eabn), c\u00f3 th\u1ec3 g\u00e2y t\u1eed vong.\",\n  \"possible_consequences\": [\n    \"Nguy c\u01a1 m\u1eafc h\u1ed9i ch\u1ee9ng Serotonin\",\n    \"L\u00fa l\u1eabn, \u1ea3o gi\u00e1c, co gi\u1eadt\",\n    \"Thay \u0111\u1ed5i huy\u1ebft \u00e1p \u0111\u1ed9t ng\u1ed9t, t\u0103ng nh\u1ecbp tim\",\n    \"Co th\u1eaft ho\u1eb7c c\u1ee9ng c\u01a1, run tay, m\u1ea5t ph\u1ed1i h\u1ee3p tay ch\u00e2n\",\n    \"Bu\u1ed3n n\u00f4n, ti\u00eau ch\u1ea3y\"\n  ],\n  \"recommendation\": \"C\u1ea7n \u0111\u1ebfn ngay c\u01a1 s\u1edf y t\u1ebf g\u1ea7n nh\u1ea5t n\u1ebfu g\u1eb7p ph\u1ea3i c\u00e1c tri\u1ec7u ch\u1ee9ng tr\u00ean. Tr\u00e1nh ho\u1eb7c h\u1ea1n ch\u1ebf ti\u00eau th\u1ee5 Ban \u00e2u trong khi \u0111ang \u0111i\u1ec1u tr\u1ecb b\u1eb1ng Flouxetine\"\n}", "to": "drug_13"}, {"color": "#FFFF00", "from": "herb_3", "title": "{\n  \"mechanism\": \"Ban \u00e2u c\u1ea3m \u1ee9ng enzyme CYP3A4, l\u00e0m n\u1ed3ng \u0111\u1ed9 Ivabradine trong m\u00e1u gi\u1ea3m h\u01a1n 60%. Thu\u1ed1c m\u1ea5t hi\u1ec7u l\u1ef1c ki\u1ec3m so\u00e1t nh\u1ecbp tim, khi\u1ebfn t\u00ecnh tr\u1ea1ng suy tim tr\u1edf n\u1eb7ng \u0111\u1ed9t ng\u1ed9t.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m n\u1ed3ng \u0111\u1ed9 v\u00e0 t\u00e1c d\u1ee5ng c\u1ee7a Ivabradine trong m\u00e1u \"\n  ],\n  \"recommendation\": \"Tr\u00e1nh ho\u1eb7c h\u1ea1n ch\u1ebf ti\u00eau th\u1ee5 Ban \u00e2u trong khi \u0111ang \u0111i\u1ec1u tr\u1ecb b\u1eb1ng Ivabradine\"\n}", "to": "drug_20"}, {"color": "#FFFF00", "from": "herb_3", "title": "{\n  \"mechanism\": \"St John\u2019s wort l\u00e0m t\u0103ng qu\u00e1 tr\u00ecnh chuy\u1ec3n h\u00f3a, d\u1eabn \u0111\u1ebfn gi\u1ea3m n\u1ed3ng \u0111\u1ed9 thu\u1ed1c trong huy\u1ebft t\u01b0\u01a1ng v\u00e0 c\u00f3 kh\u1ea3 n\u0103ng l\u00e0m gi\u1ea3m hi\u1ec7u qu\u1ea3 \u0111i\u1ec1u tr\u1ecb.\",\n  \"possible_consequences\": [\n    \"T\u0103ng cholesterol m\u00e1u \"\n  ],\n  \"recommendation\": \"H\u1ea1n ch\u1ebf s\u1eed d\u1ee5ng St.John\u0027s Wort c\u00f9ng v\u1edbi Simvastatin. C\u1ea7n b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 \u0111\u1ec3 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed1.\"\n}", "to": "drug_26"}, {"color": "#FFFF00", "from": "herb_4", "title": "{\n  \"mechanism\": \"Vi\u1ec7c u\u1ed1ng cam th\u1ea3o trong khi d\u00f9ng Digoxin c\u00f3 th\u1ec3 l\u00e0m t\u0103ng \u0111\u1ed9c t\u00ednh c\u1ee7a Digoxin do h\u1ea1 kali m\u00e1u v\u00e0 magie m\u00e1u. H\u1eadu qu\u1ea3 l\u00e0 b\u1ec7nh nh\u00e2n d\u1ec5 b\u1ecb bu\u1ed3n n\u00f4n, r\u1ed1i lo\u1ea1n th\u1ecb l\u1ef1c, v\u00e0 \u0111\u1eb7c bi\u1ec7t lo\u1ea1n nh\u1ecbp tim tr\u1ea7m tr\u1ecdng.\",\n  \"possible_consequences\": [\n    \"G\u00e2y m\u1ea5t magi\u00ea v\u00e0 kali\",\n    \"T\u0103ng nguy c\u01a1 g\u1eb7p ph\u1ea3i c\u00e1c t\u00e1c d\u1ee5ng ph\u1ee5 \u0111\u1ed9c h\u1ea1i c\u1ee7a digoxin\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi digoxin v\u00e0 cam th\u1ea3o \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_11"}, {"color": "#FFFF00", "from": "herb_4", "title": "{\n  \"mechanism\": \"Cam th\u1ea3o c\u00f3 ho\u1ea1t t\u00ednh gi\u1eef mu\u1ed1i n\u01b0\u1edbc, l\u00e0m t\u0103ng th\u1ea3i kali khi d\u00f9ng chung v\u1edbi thu\u1ed1c l\u1ee3i ti\u1ec3u, g\u00e2y h\u1ea1 kali m\u00e1u nghi\u00eam tr\u1ecdng v\u00e0 t\u0103ng nguy c\u01a1 lo\u1ea1n nh\u1ecbp tim\",\n  \"possible_consequences\": [\n    \"G\u00e2y h\u1ea1 kali m\u00e1u\",\n    \"M\u1ec7t m\u1ecfi, \u0111au ho\u1eb7c y\u1ebfu c\u01a1\",\n    \"\u0110au b\u1ee5ng, kh\u00f3 th\u1edf, nh\u1ecbp tim kh\u00f4ng \u0111\u1ec1u\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi furosemide v\u00e0 cam th\u1ea3o \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_14"}, {"color": "#FFFF00", "from": "herb_5", "title": "{\n  \"mechanism\": \"Cam th\u1ea3o l\u00e0m gi\u1ea3m \u0111\u00e0o th\u1ea3i v\u00e0 t\u0103ng \u0111\u1ed9c t\u00ednh c\u1ee7a Corticoid, \u0111\u1ed3ng th\u1eddi g\u00e2y gi\u1eef n\u01b0\u1edbc v\u00e0 h\u1ea1 Kali m\u00e1u. G\u00e2y ph\u00f9 n\u1ec1, t\u0103ng huy\u1ebft \u00e1p v\u00e0 lo\u00e9t d\u1ea1 d\u00e0y.\",\n  \"possible_consequences\": [\n    \"T\u0103ng huy\u1ebft \u00e1p\",\n    \"Gi\u1eef n\u01b0\u1edbc, gi\u1eef mu\u1ed1i \"\n  ],\n  \"recommendation\": \"Tr\u00e1nh ho\u1eb7c h\u1ea1n ch\u1ebf ti\u00eau th\u1ee5 cam th\u1ea3o trong khi \u0111ang \u0111i\u1ec1u tr\u1ecb b\u1eb1ng prednisolone\"\n}", "to": "drug_25"}, {"color": "#FFFF00", "from": "herb_5", "title": "{\n  \"mechanism\": \"Thu\u1ed1c T\u00e2y \u0111\u00e3 gi\u1eef Kali, n\u1ebfu b\u1ed5 sung th\u00eam t\u1eeb chu\u1ed1i s\u1ee9/h\u1ed9t s\u1ebd g\u00e2y t\u0103ng Kali m\u00e1u (Hyperkalemia), d\u1eabn \u0111\u1ebfn ng\u1eebng tim \u0111\u1ed9t ng\u1ed9t\",\n  \"possible_consequences\": [\n    \"T\u0103ng Kali huy\u1ebft g\u00e2y r\u1ed1i lo\u1ea1n nh\u1ecbp tim nguy hi\u1ec3m\"\n  ],\n  \"recommendation\": \"H\u1ea1n ch\u1ebf \u0103n l\u01b0\u1ee3ng l\u1edbn chu\u1ed1i v\u00e0 x\u00e9t nghi\u1ec7m \u0111i\u1ec7n gi\u1ea3i \u0111\u1ed3 \u0111\u1ecbnh k\u1ef3\"\n}", "to": "drug_27"}, {"color": "#FFFF00", "from": "herb_6", "title": "{\n  \"mechanism\": \"C\u1ecf c\u00e0 rinh hi\u1ec7p \u0111\u1ed3ng \u1ee9c ch\u1ebf ti\u1ec3u c\u1ea7u v\u00e0 \u0111\u1ea9y Warfarin ra kh\u1ecfi protein li\u00ean k\u1ebft. G\u00e2y ch\u1ea3y m\u00e1u \u1ed3 \u1ea1t kh\u00f4ng th\u1ec3 ki\u1ec3m so\u00e1t.\",\n  \"possible_consequences\": [\n    \"T\u0103ng nguy c\u01a1 xu\u1ea5t huy\u1ebft nghi\u00eam tr\u1ecdng\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 \u0111\u1ec3 theo d\u00f5i s\u00e1t sao ch\u1ec9 s\u1ed1 INR v\u00e0 gi\u1ea3m li\u1ec1u Warfarin\"\n}", "to": "drug_29"}, {"color": "#FFFF00", "from": "herb_7", "title": "{\n  \"mechanism\": \"C\u1ea3 hai \u0111\u1ec1u c\u00f3 \u0111\u1ed9c t\u00ednh cao v\u1edbi t\u1ebf b\u00e0o gan . D\u00f9ng chung l\u00e0m t\u0103ng g\u1ea5p b\u1ed9i nguy c\u01a1 ho\u1ea1i t\u1eed t\u1ebf b\u00e0o gan v\u00e0 suy gan c\u1ea5p t\u00ednh .\",\n  \"possible_consequences\": [\n    \"T\u0103ng n\u1ed3ng \u0111\u1ed9 thu\u1ed1c trong m\u00e1u d\u1eabn \u0111\u1ebfn t\u0103ng nguy c\u01a1 t\u00e1c d\u1ee5ng ph\u1ee5 nh\u01b0 \u0111au c\u01a1, ti\u00eau c\u01a1 v\u00e2n \"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Amiodarone v\u00e0 c\u00fac d\u1ea1i \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_1"}, {"color": "#FFFF00", "from": "herb_7", "title": "{\n  \"mechanism\": \"Echinacea c\u00f3 t\u00e1c d\u1ee5ng k\u00edch th\u00edch mi\u1ec5n d\u1ecbch. Do \u0111\u00f3, echinacea c\u00f3 th\u1ec3 \u0111\u1ed1i kh\u00e1ng v\u1edbi t\u00e1c d\u1ee5ng c\u1ee7a c\u00e1c thu\u1ed1c \u1ee9c ch\u1ebf mi\u1ec5n d\u1ecbch nh\u01b0 Methotrexate.\",\n  \"possible_consequences\": [\n    \"L\u00e0m m\u1ea5t t\u00e1c d\u1ee5ng \u0111i\u1ec1u tr\u1ecb c\u1ee7a Methotrexate do c\u01a1 ch\u1ebf \u0111\u1ed1i kh\u00e1ng\"\n  ],\n  \"recommendation\": \"Tr\u00e1nh s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi; tuy\u1ec7t \u0111\u1ed1i kh\u00f4ng t\u1ef1 \u00fd d\u00f9ng c\u00e1c s\u1ea3n ph\u1ea9m t\u0103ng c\u01b0\u1eddng mi\u1ec5n d\u1ecbch khi \u0111ang \u0111i\u1ec1u tr\u1ecb b\u1eb1ng Methotrexate\"\n}", "to": "drug_23"}, {"color": "#FFFF00", "from": "herb_8", "title": "{\n  \"mechanism\": \"D\u1ea7u c\u00e1 li\u1ec1u cao hi\u1ec7p \u0111\u1ed3ng \u1ee9c ch\u1ebf ti\u1ec3u c\u1ea7u v\u1edbi Aspirin. G\u00e2y xu\u1ea5t huy\u1ebft d\u1ea1 d\u00e0y th\u1ea7m l\u1eb7ng ho\u1eb7c ch\u1ea3y m\u00e1u v\u00f5ng m\u1ea1c.\",\n  \"possible_consequences\": [\n    \"T\u0103ng nguy c\u01a1 ch\u1ea3y m\u00e1u \"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Aspirin v\u00e0 D\u1ea7u c\u00e1 (Omega-3) \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_4"}, {"color": "#FFFF00", "from": "herb_9", "title": "{\n  \"mechanism\": \"G\u00e2y c\u1ed9ng h\u01b0\u1edfng h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ea1nh. Ng\u01b0\u1eddi b\u1ec7nh d\u1ec5 r\u01a1i v\u00e0o t\u00ecnh tr\u1ea1ng h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft c\u1ea5p t\u00ednh (run r\u1ea9y, v\u00e3 m\u1ed3 h\u00f4i, ng\u1ea5t x\u1ec9u), c\u00f3 th\u1ec3 \u0111e d\u1ecda t\u00ednh m\u1ea1ng.\",\n  \"possible_consequences\": [\n    \"T\u0103ng t\u00e1c d\u1ee5ng h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft g\u00e2y nguy hi\u1ec3m\"\n  ],\n  \"recommendation\": \"C\u1ea7n theo d\u00f5i \u0111\u01b0\u1eddng huy\u1ebft th\u01b0\u1eddng xuy\u00ean v\u00e0 b\u00e1o b\u00e1c s\u0129 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng\"\n}", "to": "drug_16"}, {"color": "#FFFF00", "from": "herb_10", "title": "{\n  \"mechanism\": \"\u0110an s\u00e2m l\u00e0m t\u0103ng n\u1ed3ng \u0111\u1ed9 Aspirin trong m\u00e1u m\u1ed9t c\u00e1ch nguy hi\u1ec3m, d\u1eabn \u0111\u1ebfn r\u1ee7i ro xu\u1ea5t huy\u1ebft k\u1ecbch ph\u00e1t.\",\n  \"possible_consequences\": [\n    \"T\u0103ng t\u00e1c d\u1ee5ng ch\u1ed1ng \u0111\u00f4ng m\u00e1u\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Aspirin v\u00e0 \u0111an s\u00e2m \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_4"}, {"color": "#FFFF00", "from": "herb_10", "title": "{\n  \"mechanism\": \"Chi\u1ebft xu\u1ea5t \u0111\u1eadu n\u00e0nh th\u1ee7y ph\u00e2n \u1ee9c ch\u1ebf c\u00e1c isoenzyme cytochrome P450 (CYP2C9 v\u00e0 CYP3A4) d\u1eabn \u0111\u1ebfn hi\u1ec7u qu\u1ea3 ch\u1ed1ng \u0111\u00f4ng m\u00e1u c\u1ee7a warfarin gi\u1ea3m.\",\n  \"possible_consequences\": [\n    \"G\u00e2y m\u1ea5t \u1ed5n \u0111\u1ecbnh ch\u1ec9 s\u1ed1 \u0111\u00f4ng m\u00e1u INR\"\n  ],\n  \"recommendation\": \"Duy tr\u00ec l\u01b0\u1ee3ng \u0103n \u1ed5n \u0111\u1ecbnh h\u00e0ng ng\u00e0y, tr\u00e1nh thay \u0111\u1ed5i \u0111\u1ed9t ng\u1ed9t v\u00e0 b\u00e1o b\u00e1c s\u0129 theo d\u00f5i\"\n}", "to": "drug_29"}, {"color": "#FFFF00", "from": "herb_12", "title": "{\n  \"mechanism\": \"G\u1eebng t\u01b0\u01a1i c\u00f3 ho\u1ea1t t\u00ednh ch\u1ed1ng k\u1ebft t\u1eadp ti\u1ec3u c\u1ea7u, t\u01b0\u01a1ng t\u1ef1 aspirin. D\u00f9ng \u0111\u1ed3ng th\u1eddi g\u1eebng v\u1edbi aspirin ho\u1eb7c thu\u1ed1c ch\u1ed1ng \u0111\u00f4ng kh\u00e1c s\u1ebd l\u00e0m t\u0103ng nguy c\u01a1 ch\u1ea3y m\u00e1u (xu\u1ea5t huy\u1ebft n\u1ed9i t\u1ea1ng ho\u1eb7c d\u01b0\u1edbi da) cho ng\u01b0\u1eddi b\u1ec7nh\",\n  \"possible_consequences\": [\n    \"T\u0103ng nguy c\u01a1 ch\u1ea3y m\u00e1u\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Aspirin v\u00e0 g\u1eebng \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_4"}, {"color": "#FFFF00", "from": "herb_13", "title": "{\n  \"mechanism\": \"Kh\u1ed5 qua c\u00f3 t\u00e1c d\u1ee5ng h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft m\u1ea1nh, k\u1ebft h\u1ee3p v\u1edbi thu\u1ed1c d\u1ec5 l\u00e0m \u0111\u01b0\u1eddng huy\u1ebft h\u1ea1 qu\u00e1 m\u1ee9c, g\u00e2y t\u1ee5t \u0111\u01b0\u1eddng huy\u1ebft nguy hi\u1ec3m\",\n  \"possible_consequences\": [\n    \"T\u0103ng nguy c\u01a1 h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ee9c\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 \u0111\u1ec3 theo d\u00f5i ch\u1eb7t ch\u1ebd ch\u1ec9 s\u1ed1 \u0111\u01b0\u1eddng huy\u1ebft v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng\"\n}", "to": "drug_15"}, {"color": "#FFFF00", "from": "herb_13", "title": "{\n  \"mechanism\": \"Kh\u1ed5 qua ch\u1ee9a c\u00e1c ho\u1ea1t ch\u1ea5t t\u01b0\u01a1ng t\u1ef1 insulin; vi\u1ec7c k\u1ebft h\u1ee3p v\u1edbi insulin c\u00f3 th\u1ec3 khi\u1ebfn \u0111\u01b0\u1eddng huy\u1ebft t\u1ee5t xu\u1ed1ng m\u1ee9c nguy hi\u1ec3m, g\u00e2y h\u00f4n m\u00ea ho\u1eb7c co gi\u1eadt.\",\n  \"possible_consequences\": [\n    \"G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ee9c\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Insulin v\u00e0 kh\u1ed5 qua \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_19"}, {"color": "#FFFF00", "from": "herb_13", "title": "{\n  \"mechanism\": \"G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft hi\u1ec7p \u0111\u1ed3ng. N\u1ed3ng \u0111\u1ed9 \u0111\u01b0\u1eddng trong m\u00e1u t\u1ee5t s\u00e2u d\u01b0\u1edbi ng\u01b0\u1ee1ng an to\u00e0n (Hypoglycemia), g\u00e2y v\u00e3 m\u1ed3 h\u00f4i, b\u1ee7n r\u1ee7n tay ch\u00e2n.\",\n  \"possible_consequences\": [\n    \"G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ee9c\",\n    \"Nh\u00ecn m\u1edd, run r\u1ea9y\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Metformin v\u00e0 kh\u1ed5 qua \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_22"}, {"color": "#FFFF00", "from": "herb_14", "title": "{\n  \"mechanism\": \"Men g\u1ea1o \u0111\u1ecf ch\u1ee9a monacolin K, b\u1ea3n ch\u1ea5t ch\u00ednh l\u00e0 Lovastatin. U\u1ed1ng chung v\u1edbi Atorvastatin khi\u1ebfn b\u1ec7nh nh\u00e2n b\u1ecb qu\u00e1 li\u1ec1u statin c\u1ef1c n\u1eb7ng, d\u1eabn \u0111\u1ebfn ti\u00eau c\u01a1 v\u00e2n, h\u1ee7y ho\u1ea1i t\u1ebf b\u00e0o c\u01a1 v\u00e0 g\u00e2y suy th\u1eadn c\u1ea5p k\u1ecbch ph\u00e1t.\",\n  \"possible_consequences\": [\n    \"T\u0103ng nguy c\u01a1 t\u1ed5n th\u01b0\u01a1ng th\u1ea7n kinh, gan \"\n  ],\n  \"recommendation\": \"Tr\u00e1nh ho\u1eb7c h\u1ea1n ch\u1ebf s\u1eed d\u1ee5ng men g\u1ea1o \u0111\u1ecf khi \u0111i\u1ec1u tr\u1ecb b\u1eb1ng Atorvastatin\"\n}", "to": "drug_5"}, {"color": "#FFFF00", "from": "herb_14", "title": "{\n  \"mechanism\": \"Men g\u1ea1o \u0111\u1ecf ch\u1ee9a Monacolin K b\u1ea3n ch\u1ea5t l\u00e0 Lovastatin. U\u1ed1ng chung g\u00e2y qu\u00e1 li\u1ec1u statin n\u1eb7ng, ti\u00eau c\u01a1 v\u00e2n v\u00e0 suy th\u1eadn c\u1ea5p.\",\n  \"possible_consequences\": [\n    \"Y\u1ebfu, t\u00ea, \u0111au, n\u00f3ng r\u00e1t ho\u1eb7c ng\u1ee9a ran \u1edf tay, ch\u00e2n\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi simvastatin v\u00e0 men g\u1ea1o \u0111\u1ecf \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_26"}, {"color": "#FFFF00", "from": "herb_15", "title": "{\n  \"mechanism\": \"N\u1ea5m linh chi hi\u1ec7p \u0111\u1ed3ng gi\u00e3n m\u1ea1ch m\u1ea1nh v\u1edbi Amlodipine . G\u00e2y t\u1ee5t huy\u1ebft \u00e1p k\u1ecbch li\u1ec7t, d\u1eabn \u0111\u1ebfn s\u1ed1c ho\u1eb7c t\u00e9 ng\u00e3 g\u00e2y ch\u1ea5n th\u01b0\u01a1ng s\u1ecd n\u00e3o .\",\n  \"possible_consequences\": [\n    \"G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ee9c\",\n    \"Nh\u00ecn m\u1edd, run r\u1ea9y\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Amlodipine v\u00e0 linh chi \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_2"}, {"color": "#FFFF00", "from": "herb_15", "title": "{\n  \"mechanism\": \"N\u00e2m linh chi c\u00f3 t\u00e1c d\u1ee5ng l\u00e0m gi\u1ea3m \u0111\u01b0\u1eddng huy\u1ebft khi k\u1ebft h\u1ee3p v\u1edbi Captopril c\u00f3 th\u1ec3 g\u00e2y h\u1ea1 huy\u1ebft \u00e1p g\u00e2y nguy\u00ea hi\u1ec3m cho ng\u01b0\u1eddi b\u1ec7nh \",\n  \"possible_consequences\": [\n    \"G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ee9c\",\n    \"Nh\u00ecn m\u1edd, run r\u1ea9y\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Captoril v\u00e0 n\u1ea5m linh chi \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_6"}, {"color": "#FFFF00", "from": "herb_16", "title": "{\n  \"mechanism\": \"Ngh\u1ec7 li\u1ec1u cao \u1ee9c ch\u1ebf enzym gan l\u00e0m t\u0103ng n\u1ed3ng \u0111\u1ed9 Aspirin. Hi\u1ec7u \u1ee9ng c\u1ed9ng h\u01b0\u1edfng l\u00e0m \\\"lo\u00e3ng m\u00e1u\\\" c\u1ef1c \u0111\u1ed9 g\u00e2y xu\u1ea5t huy\u1ebft n\u00e3o ho\u1eb7c d\u1ea1 d\u00e0y .\",\n  \"possible_consequences\": [\n    \"\u1ea2nh h\u01b0\u1edfng \u0111\u1ebfn ch\u1ee9c n\u0103ng ti\u1ec3u c\u1ea7u v\u00e0 \u0111\u00f4ng m\u00e1u, t\u0103ng nguy c\u01a1 ch\u1ea3y m\u00e1u\",\n    \"Ch\u1ea3y m\u00e1u, b\u1ea7m t\u00edm b\u1ea5t th\u01b0\u1eddng\",\n    \"Ch\u00f3ng m\u1eb7t, cho\u00e1ng v\u00e1ng\",\n    \"Ph\u00e2n \u0111\u1ecf ho\u1eb7c \u0111en\",\n    \"Ho ra ho\u1eb7c n\u00f4n ra m\u00e1u\",\n    \"\u0110au \u0111\u1ea7u, y\u1ebfu s\u1ee9c\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Aspirin v\u00e0 ngh\u1ec7 \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_4"}, {"color": "#FFFF00", "from": "herb_16", "title": "{\n  \"mechanism\": \"Ngh\u1ec7 li\u1ec1u cao t\u0103ng nh\u1ea1y c\u1ea3m insulin v\u00e0 \u1ee9c ch\u1ebf enzym gan x\u1eed l\u00fd thu\u1ed1c. G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft k\u1ecbch s\u00e0n, h\u00f4n m\u00ea s\u00e2u.\",\n  \"possible_consequences\": [\n    \"H\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft\",\n    \"\u0110au \u0111\u1ea7u, ch\u00f3ng m\u1eb7t, bu\u1ed3n ng\u1ee7\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Glipizide v\u00e0 ngh\u1ec7 \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_17"}, {"color": "#FFFF00", "from": "herb_16", "title": "{\n  \"mechanism\": \"Curcumin \u1ee9c ch\u1ebf enzyme chuy\u1ec3n h\u00f3a t\u1ea1i gan, l\u00e0m t\u00edch t\u1ee5 thu\u1ed1c Tacrolimus trong m\u00e1u, \u0111\u1ea9y nhanh qu\u00e1 tr\u00ecnh suy th\u1eadn c\u1ea5p.\",\n  \"possible_consequences\": [\n    \"T\u0103ng n\u1ed3ng \u0111\u1ed9 v\u00e0 \u0111\u1ed9c t\u00ednh c\u1ee7a Tacrolimus\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng ngh\u1ec7 \u0111\u1ec3 theo d\u00f5i n\u1ed3ng \u0111\u1ed9 thu\u1ed1c v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng\"\n}", "to": "drug_28"}, {"color": "#FFFF00", "from": "herb_17", "title": "{\n  \"mechanism\": \"Nha \u0111am c\u00f3 c\u00f4ng d\u1ee5ng h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft khi k\u1ebft h\u1ee3p v\u1edbi thu\u1ed1c h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft Glibenclamide c\u00f3 th\u1ec3 g\u00e2y ra h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft kh\u00f4ng ki\u1ec3m so\u00e1t.\",\n  \"possible_consequences\": [\n    \"H\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft\",\n    \"\u0110au \u0111\u1ea7u, ch\u00f3ng m\u1eb7t, bu\u1ed3n ng\u1ee7\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Glibenclamide v\u00e0 nha \u0111am \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_15"}, {"color": "#FFFF00", "from": "herb_18", "title": "{\n  \"mechanism\": \"Khi k\u1ebft h\u1ee3p, Nh\u00e2n s\u00e2m c\u00f3 th\u1ec3 k\u00edch th\u00edch tim v\u00e0 l\u00e0m thay \u0111\u1ed5i c\u00e1c k\u00eanh ion c\u01a1 tim. Vi\u1ec7c tim b\u1ecb k\u00edch th\u00edch qu\u00e1 m\u1ee9c d\u1eabn \u0111\u1ebfn c\u00e1c c\u01a1n lo\u1ea1n nh\u1ecbp th\u1ea5t k\u1ecbch ph\u00e1t, g\u00e2y ng\u1ea5t x\u1ec9u ho\u1eb7c ng\u1eebng tim \u0111\u1ed9t ng\u1ed9t.\",\n  \"possible_consequences\": [\n    \"T\u0103ng nguy c\u01a1 ng\u1ed9 \u0111\u1ed9c Digoxin v\u00e0 sai l\u1ec7ch k\u1ebft qu\u1ea3 ch\u1ea9n \u0111o\u00e1n\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 \u0111\u1ec3 s\u1eed d\u1ee5ng ph\u01b0\u01a1ng ph\u00e1p x\u00e9t nghi\u1ec7m \u0111\u1eb7c hi\u1ec7u v\u00e0 theo d\u00f5i s\u00e1t c\u00e1c d\u1ea5u hi\u1ec7u l\u00e2m s\u00e0ng\"\n}", "to": "drug_11"}, {"color": "#FFFF00", "from": "herb_18", "title": "{\n  \"mechanism\": \"Nh\u00e2n s\u00e2m l\u00e0m t\u0103ng \u0111\u1ed9 nh\u1ea1y insulin ngo\u1ea1i sinh. D\u1eabn \u0111\u1ebfn h\u00f4n m\u00ea h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft c\u1ea5p t\u00ednh do \u0111\u01b0\u1eddng huy\u1ebft s\u1ee5t gi\u1ea3m k\u1ecbch s\u00e0n.\",\n  \"possible_consequences\": [\n    \"H\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft\",\n    \"\u0110au \u0111\u1ea7u, ch\u00f3ng m\u1eb7t, bu\u1ed3n ng\u1ee7\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Insulin v\u00e0 nh\u00e2n s\u00e2m \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_19"}, {"color": "#FFFF00", "from": "herb_18", "title": "{\n  \"mechanism\": \"C\u1ea3 hai c\u00f9ng t\u00e1c \u0111\u1ed9ng l\u00ean \u0111\u01b0\u1eddng huy\u1ebft. G\u00e2y ra nh\u1eefng c\u01a1n h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft k\u1ecbch ph\u00e1t, v\u00e3 m\u1ed3 h\u00f4i, co gi\u1eadt v\u00e0 h\u00f4n m\u00ea s\u00e2u.\",\n  \"possible_consequences\": [\n    \"H\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft\",\n    \"\u0110au \u0111\u1ea7u, ch\u00f3ng m\u1eb7t, bu\u1ed3n ng\u1ee7\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Metformin v\u00e0 nh\u00e2n s\u00e2m \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_22"}, {"color": "#FFFF00", "from": "herb_18", "title": "{\n  \"mechanism\": \"Nh\u00e2n s\u00e2m th\u00fac \u0111\u1ea9y chuy\u1ec3n h\u00f3a Warfarin v\u00e0 \u1ea3nh h\u01b0\u1edfng s\u1ef1 \u0111\u00f4ng m\u00e1u, khi\u1ebfn ch\u1ec9 s\u1ed1 INR gi\u1ea3m (m\u00e1u \u0111\u00f4ng nhanh h\u01a1n), d\u1eabn t\u1edbi nguy c\u01a1 h\u00ecnh th\u00e0nh c\u1ee5c m\u00e1u \u0111\u00f4ng.\",\n  \"possible_consequences\": [\n    \"Va \u0111\u1eadp nh\u1ecf c\u00f3 th\u1ec3 g\u00e2y t\u1ee5 m\u00e1y d\u01b0\u1edbi da, kh\u00f3 tan h\u1ebft \"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi warfarin v\u00e0 nh\u00e2n s\u00e2m \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_29"}, {"color": "#FFFF00", "from": "herb_19", "title": "{\n  \"mechanism\": \"N\u01b0\u1edbc b\u01b0\u1edfi \u1ee9c ch\u1ebf enzym CYP3A4, l\u00e0m Amlodipine t\u00edch t\u1ee5 g\u00e2y qu\u00e1 li\u1ec1u. G\u00e2y t\u1ee5t huy\u1ebft \u00e1p t\u01b0 th\u1ebf nghi\u00eam tr\u1ecdng, ng\u01b0\u1eddi gi\u00e0 ng\u00e3 g\u00e3y x\u01b0\u01a1ng.\",\n  \"possible_consequences\": [\n    \"G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ee9c\",\n    \"Nh\u00ecn m\u1edd, run r\u1ea9y\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Amlodipine v\u00e0 b\u01b0\u1edfi \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_2"}, {"color": "#FFFF00", "from": "herb_19", "title": "{\n  \"mechanism\": \"N\u01b0\u1edbc b\u01b0\u1edfi ch\u1ee9a ch\u1ea5t \u1ee9c ch\u1ebf enzyme CYP3A4 \u1edf gan, khi\u1ebfn thu\u1ed1c statin kh\u00f4ng \u0111\u01b0\u1ee3c chuy\u1ec3n h\u00f3a b\u00ecnh th\u01b0\u1eddng. K\u1ebft qu\u1ea3 l\u00e0 n\u1ed3ng \u0111\u1ed9 statin t\u0103ng cao trong m\u00e1u, g\u00e2y qu\u00e1 li\u1ec1u \u2013 d\u1eabn t\u1edbi t\u1ed5n th\u01b0\u01a1ng gan, \u0111au c\u01a1 ho\u1eb7c ti\u00eau c\u01a1 v\u00e2n nguy hi\u1ec3m.\",\n  \"possible_consequences\": [\n    \"T\u0103ng n\u1ed3ng \u0111\u1ed9 thu\u1ed1c trong m\u00e1u d\u1eabn \u0111\u1ebfn t\u0103ng nguy c\u01a1 t\u00e1c d\u1ee5ng ph\u1ee5 nh\u01b0 \u0111au c\u01a1, ti\u00eau c\u01a1 v\u00e2n \"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Atorvasatin v\u00e0 b\u01b0\u1edfi \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_5"}, {"color": "#FFFF00", "from": "herb_19", "title": "{\n  \"mechanism\": \"Isoenzym cytochrome P450 CYP3A4 l\u00e0 enzym ch\u00ednh tham gia v\u00e0o chuy\u1ec3n h\u00f3a carbamazepine. C\u00e1c th\u00e0nh ph\u1ea7n trong n\u01b0\u1edbc \u00e9p b\u01b0\u1edfi \u0111\u01b0\u1ee3c bi\u1ebft l\u00e0 \u1ee9c ch\u1ebf CYP3A4, t\u1eeb \u0111\u00f3 l\u00e0m gi\u1ea3m chuy\u1ec3n h\u00f3a carbamazepine v\u00e0 d\u1eabn \u0111\u1ebfn t\u0103ng n\u1ed3ng \u0111\u1ed9 thu\u1ed1c trong m\u00e1u.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m n\u1ed3ng \u0111\u1ed9 v\u00e0 t\u00e1c d\u1ee5ng c\u1ee7a Carbamazepine\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Carbamazepine v\u00e0 b\u01b0\u1edfi \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_7"}, {"color": "#FFFF00", "from": "herb_19", "title": "{\n  \"mechanism\": \"N\u01b0\u1edbc \u00e9p b\u01b0\u1edfi \u1ee9c ch\u1ebf enzyme chuy\u1ec3n h\u00f3a statin \u1edf gan, l\u00e0m n\u1ed3ng \u0111\u1ed9 simvastatin t\u0103ng l\u00ean g\u1ea5p nhi\u1ec1u l\u1ea7n (c\u00f3 th\u1ec3 h\u01a1n 10 l\u1ea7n), g\u00e2y \u0111\u1ed9c cho gan v\u00e0 c\u01a1.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m cholesterol v\u00e0 l\u00e0m t\u0103ng t\u00e1c d\u1ee5ng ph\u1ee5 c\u1ee7a simvastatin\"\n  ],\n  \"recommendation\": \"Kh\u00f4ng khuy\u1ebfn ngh\u1ecb s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi n\u01b0\u1edbc \u00e9p b\u01b0\u1edfi v\u00e0 simvastatin, c\u00f3 th\u1ec3 thay n\u01b0\u1edbc \u00e9p cam thay cho n\u01b0\u1edbc \u00e9p b\u01b0\u1edfi\"\n}", "to": "drug_26"}, {"color": "#FFFF00", "from": "herb_20", "title": "{\n  \"mechanism\": \"C\u1ed3n l\u00e0m t\u0103ng c\u1ef1c \u0111\u1ed9 t\u00e1c d\u1ee5ng \u1ee9c ch\u1ebf th\u1ea7n kinh c\u1ee7a Diazepam. S\u1ef1 k\u1ebft h\u1ee3p n\u00e0y g\u00e2y \u1ee9c ch\u1ebf trung t\u00e2m h\u00f4 h\u1ea5p \u1edf h\u00e0nh n\u00e3o, d\u1eabn \u0111\u1ebfn t\u00ecnh tr\u1ea1ng ng\u1eebng th\u1edf khi ng\u1ee7 ho\u1eb7c h\u00f4n m\u00ea s\u00e2u.\",\n  \"possible_consequences\": [\n    \"Ch\u00f3ng m\u1eb7t, bu\u1ed3n ng\u1ee7, kh\u00f3 t\u1eadp trung \"\n  ],\n  \"recommendation\": \"Tr\u00e1nh ho\u1eb7c h\u1ea1n ch\u1ebf s\u1eed d\u1ee5ng r\u01b0\u1ee3u bia khi \u0111i\u1ec1u tr\u1ecb b\u1eb1ng Diazepam\"\n}", "to": "drug_9"}, {"color": "#FFFF00", "from": "herb_21", "title": "{\n  \"mechanism\": \"C\u1ea3 hai \u0111\u1ec1u l\u00e0m gi\u00e3n m\u1ea1ch m\u1ea1nh. K\u1ebft h\u1ee3p d\u00f9ng chung g\u00e2y h\u1ea1 huy\u1ebft \u00e1p qu\u00e1 m\u1ee9c, khi\u1ebfn ng\u01b0\u1eddi gi\u00e0 d\u1ec5 b\u1ecb ch\u00f3ng m\u1eb7t, hoa m\u1eaft v\u00e0 t\u00e9 ng\u00e3 do h\u1ea1 huy\u1ebft \u00e1p t\u01b0 th\u1ebf.\",\n  \"possible_consequences\": [\n    \"G\u00e2y h\u1ea1 \u0111\u01b0\u1eddng huy\u1ebft qu\u00e1 m\u1ee9c\",\n    \"Nh\u00ecn m\u1edd, run r\u1ea9y\",\n    \"\u0110\u1ed5 m\u1ed3 h\u00f4i, tim \u0111\u1eadp nhanh\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Amlodipine v\u00e0 t\u1ecfi \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_2"}, {"color": "#FFFF00", "from": "herb_21", "title": "{\n  \"mechanism\": \"Tr\u00e0 xanh ch\u1ee9a l\u01b0\u1ee3ng l\u1edbn Vitamin K, ho\u1ea1t ch\u1ea5t n\u00e0y \u0111\u1ed1i kh\u00e1ng tr\u1ef1c ti\u1ebfp v\u1edbi c\u01a1 ch\u1ebf ho\u1ea1t \u0111\u1ed9ng c\u1ee7a Warfarin, l\u00e0m ch\u1ec9 s\u1ed1 INR gi\u1ea3m s\u00e2u.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m t\u00e1c d\u1ee5ng ch\u1ed1ng \u0111\u00f4ng c\u1ee7a Warfarin, t\u0103ng nguy c\u01a1 huy\u1ebft kh\u1ed1i\"\n  ],\n  \"recommendation\": \"C\u1ea7n duy tr\u00ec l\u01b0\u1ee3ng ti\u00eau th\u1ee5 \u1ed5n \u0111\u1ecbnh v\u00e0 b\u00e1o b\u00e1c s\u0129 \u0111\u1ec3 x\u00e9t nghi\u1ec7m INR th\u01b0\u1eddng xuy\u00ean\"\n}", "to": "drug_29"}, {"color": "#FFFF00", "from": "herb_22", "title": "{\n  \"mechanism\": \"Tr\u00e0 xanh \u1ee9c ch\u1ebf protein v\u1eadn chuy\u1ec3n OATP, l\u00e0m gi\u1ea3m n\u1ed3ng \u0111\u1ed9 thu\u1ed1c t\u1edbi h\u01a1n 70%. Huy\u1ebft \u00e1p t\u0103ng v\u1ecdt b\u1ea5t ng\u1edd g\u00e2y \u0111\u1ed9t qu\u1ef5.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m n\u1ed3ng \u0111\u1ed9 v\u00e0 t\u00e1c d\u1ee5ng c\u1ee7a Lisinopril trong m\u00e1u \"\n  ],\n  \"recommendation\": \"Tr\u00e1nh ho\u1eb7c h\u1ea1n ch\u1ebf ti\u00eau th\u1ee5 tr\u00e0 xanh trong khi \u0111ang \u0111i\u1ec1u tr\u1ecb b\u1eb1ng Lisinopril\"\n}", "to": "drug_21"}, {"color": "#FFFF00", "from": "herb_22", "title": "{\n  \"mechanism\": \"U\u1ed1ng tr\u00e0 xanh th\u01b0\u1eddng xuy\u00ean l\u00e0m gi\u1ea3m h\u1ea5p thu nadolol \u1edf ru\u1ed9t (~76%), khi\u1ebfn thu\u1ed1c m\u1ea5t t\u00e1c d\u1ee5ng ki\u1ec3m so\u00e1t huy\u1ebft \u00e1p v\u00e0 nh\u1ecbp tim.\",\n  \"possible_consequences\": [\n    \"Gi\u1ea3m \u0111\u00e1ng k\u1ec3 n\u1ed3ng \u0111\u1ed9 Nadolol trong c\u01a1 th\u1ec3 \"\n  ],\n  \"recommendation\": \"Tr\u00e1nh ho\u1eb7c h\u1ea1n ch\u1ebf ti\u00eau th\u1ee5 tr\u00e0 xanh trong khi \u0111ang \u0111i\u1ec1u tr\u1ecb b\u1eb1ng Nadolol\"\n}", "to": "drug_24"}, {"color": "#FFFF00", "from": "herb_22", "title": "{\n  \"mechanism\": \"Chi\u1ebft xu\u1ea5t tr\u00e0 xanh c\u00f3 th\u1ec3 \u1ee9c ch\u1ebf protein v\u1eadn chuy\u1ec3n thu\u1ed1c P-gp, l\u00e0m t\u0103ng n\u1ed3ng \u0111\u1ed9 simvastatin trong m\u00e1u, t\u0103ng t\u00e1c d\u1ee5ng ph\u1ee5 g\u00e2y \u0111au c\u01a1, t\u1ed5n th\u01b0\u01a1ng gan.\",\n  \"possible_consequences\": [\n    \"Ti\u00eau c\u01a1 v\u00e2n\",\n    \"\u0110au c\u01a1, \u0111au nh\u1ee9c ho\u1eb7c y\u1ebfu c\u01a1\",\n    \"S\u1ed1t, m\u1ec7t m\u1ecfi, bu\u1ed3n n\u00f4n, s\u01b0ng kh\u1edbp\",\n    \"Ch\u1ea3y m\u00e1u, b\u1ea7m t\u00edm b\u1ea5t th\u01b0\u1eddng\",\n    \"Ph\u00e1t ban da, ng\u1ee9a\",\n    \"V\u00e0ng da, v\u00e0ng m\u1eaft\"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi simvastatin v\u00e0 tr\u00e0 xanh \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_26"}, {"color": "#FFFF00", "from": "herb_23", "title": "{\n  \"mechanism\": \"B\u1ea3n ch\u1ea5t \u0111\u1ec1u l\u00e0 thu\u1ed1c kh\u00e1ng vi\u00eam li\u1ec1u cao. D\u00f9ng chung g\u00e2y vi\u00eam lo\u00e9t d\u1ea1 d\u00e0y n\u1eb7ng v\u00e0 suy th\u1eadn c\u1ea5p \u1edf ng\u01b0\u1eddi gi\u00e0 do \u1ee9c ch\u1ebf k\u00e9p qu\u00e1 tr\u00ecnh b\u1ea3o v\u1ec7 ni\u00eam m\u1ea1c.\",\n  \"possible_consequences\": [\n    \"C\u00f3 nguy c\u01a1 l\u00e0m gi\u1ea3m n\u1ed3ng \u0111\u1ed9 thu\u1ed1c trong c\u01a1 th\u1ec3 \"\n  ],\n  \"recommendation\": \"C\u1ea7n ph\u1ea3i b\u00e1o c\u00e1o v\u1edbi b\u00e1c s\u0129 v\u1ec1 vi\u1ec7c s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi Diclofenac v\u00e0 v\u1ecf li\u1ec5u tr\u1eafng \u0111\u1ec3 b\u00e1c s\u0129 theo d\u00f5i c\u00e1c ch\u1ec9 s\u1ed5 v\u00e0 \u0111i\u1ec1u ch\u1ec9nh li\u1ec1u l\u01b0\u1ee3ng \"\n}", "to": "drug_10"}, {"color": "#FFFF00", "from": "herb_23", "title": "{\n  \"mechanism\": \"V\u1ecf li\u1ec5u tr\u1eafng c\u00f3 th\u1ec3 g\u00e2y k\u00edch \u1ee9ng d\u1ea1 d\u00e0y, g\u00e2y d\u1ecb \u1ee9ng ho\u1eb7c l\u00e0m t\u0103ng nguy c\u01a1 ch\u1ea3y m\u00e1u k\u1ebft h\u1ee3p v\u1edbi thu\u1ed1c ch\u1ed1ng vi\u00eam kh\u00f4ng steroid (NSAID)\",\n  \"possible_consequences\": [\n    \"T\u0103ng \u0111\u1ed9c t\u00ednh nghi\u00eam tr\u1ecdng l\u00ean d\u1ea1 d\u00e0y v\u00e0 th\u1eadn\"\n  ],\n  \"recommendation\": \"Tr\u00e1nh s\u1eed d\u1ee5ng \u0111\u1ed3ng th\u1eddi; n\u00ean tham kh\u1ea3o \u00fd ki\u1ebfn b\u00e1c s\u0129 v\u1ec1 thu\u1ed1c thay th\u1ebf\"\n}", "to": "drug_18"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.3,
+            "damping": 0.09,
+            "gravitationalConstant": -80000,
+            "springConstant": 0.001,
+            "springLength": 250
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

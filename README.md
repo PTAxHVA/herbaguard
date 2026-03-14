@@ -1,52 +1,59 @@
-# HerbGuard AI Agents
+# HerbGuard - Trợ Lý AI Tra Cứu Tương Tác Thuốc & Thảo Dược
 
-This project contains AI agents built with `pydantic-ai` and Google's Gemini API to extract medical entities (herbs and drugs) from Vietnamese questions and map them to local JSON databases.
+Dự án này là một hệ thống AI thông minh kết hợp Mô hình Ngôn ngữ Lớn (LLM - Gemini) với Knowledge Graph (Đồ thị tri thức) để xác định và cảnh báo các tương tác nguy hiểm giữa thuốc tây và thảo dược.
 
-## Project Structure
+## 🚀 Tính Năng Chính
 
-- **herb_agent.py**: Extracts herb names from questions and maps them to IDs in `data.json`.
-- **drug_agent.py**: Extracts western drug names from questions and maps them to IDs in `data_drug.json`.
-- **data.json**: Database of herbs and their aliases.
-- **data_drug.json**: Database of drugs and their aliases.
-- **.env**: Stores sensitive environment variables (API keys).
+*   **Tra cứu tương tác**: Kiểm tra xem thuốc tây (ví dụ: Warfarin) có tương tác với thảo dược (ví dụ: Nhân sâm) hay không.
+*   **Knowledge Graph**: Sử dụng cấu trúc đồ thị để tìm kiếm thực thể nhanh chóng và chính xác.
+*   **AI Agent thông minh**: Hiểu ngôn ngữ tự nhiên tiếng Việt, nhớ ngữ cảnh hội thoại (ví dụ: "thuốc đó" là thuốc gì).
+*   **Trực quan hóa**: Vẽ biểu đồ mạng lưới tương tác để người dùng dễ quan sát.
 
-## Prerequisites
+## 📂 Cấu Trúc Dự Án
 
-- Python 3.9+
-- A Google Gemini API Key (Get one from [Google AI Studio](https://aistudio.google.com/))
+*   **`agent_graph/`**: Chứa logic của Agent thế hệ mới sử dụng Knowledge Graph.
+    *   `graph_agent.py`: File chạy chính của chatbot.
+    *   `knowledge_graph.py`: Xây dựng đồ thị từ dữ liệu JSON.
+    *   `visualize_graph.py`: Tạo file HTML để xem đồ thị.
+*   **`database/`**: Chứa dữ liệu thô.
+    *   `data.json`: Dữ liệu thảo dược.
+    *   `data_drug.json`: Dữ liệu thuốc tây.
+    *   `interaction.json`: Dữ liệu tương tác.
 
-## Setup
+## 🛠️ Cài Đặt
 
-1. **Install Dependencies**
-   ```bash
-   pip install "pydantic-ai[google]" 
-   pip install python-dotenv
-   ```
+### 1. Yêu cầu
+*   Python 3.10+
+*   Google Gemini API Key (Lấy tại [Google AI Studio](https://aistudio.google.com/))
 
-2. **Configure Environment Variables**
-   Create a `.env` file in the root directory (if it doesn't exist) and add your API key:
-   ```env
-   GOOGLE_API_KEY=your_actual_api_key_here
-   ```
-
-## Usage    
-
-### Running the Herb Agent
-This agent identifies herbs like "nhân sâm" or "bạch quả".
+### 2. Cài đặt thư viện
+Mở terminal tại thư mục dự án và chạy:
 ```bash
-python herb_agent.py
+pip install "pydantic-ai[google]" python-dotenv duckduckgo-search redis networkx pyvis trafilatura
 ```
 
-### Running the Drug Agent
-This agent identifies drugs like "warfarin" or "metformin".
-```bash
-python drug_agent.py
+### 3. Cấu hình biến môi trường
+Tạo file `.env` tại thư mục này và dán API Key vào:
+```env
+GOOGLE_API_KEY=your_actual_api_key_here
 ```
 
-## How It Works
+## ▶️ Hướng Dẫn Chạy
 
-1. The agent receives a natural language query (e.g., "Cơ chế tương tác giữa hồng sâm và warfarin?").
-2. It uses the LLM (Gemini 2.5 Flash) to identify potential entity names.
-3. It calls a specific ID lookup tool (`get_information_of_json` or `get_drug_information_of_json`).
-4. The tool performs a fuzzy search (case-insensitive, ignores diacritics) against the local JSON files.
-5. The agent returns a structured JSON result containing the `herb_id` or `drug_id`.
+### Cách 1: Chạy Chatbot AI (Graph Agent) - Khuyên Dùng
+Đây là cách sử dụng chính để chat với AI.
+```bash
+python agent_graph/graph_agent.py
+```
+
+### Cách 2: Xem Biểu Đồ Tương Tác (Visualization)
+Để tạo file HTML hiển thị mạng lưới thuốc và thảo dược:
+```bash
+python agent_graph/visualize_graph.py
+```
+Sau khi chạy, mở file `agent_graph/herb_drug_network.html` bằng trình duyệt web.
+
+
+## 📝 Lưu ý
+*   Hệ thống sử dụng DuckDuckGo để tra cứu thông tin thuốc mới nếu không có trong database.
+*   Database nằm trong thư mục `database/`. Nếu bạn thêm thuốc/thảo dược mới, hãy cập nhật các file JSON tại đó.
