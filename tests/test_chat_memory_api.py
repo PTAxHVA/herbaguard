@@ -156,6 +156,22 @@ class ChatApiTests(unittest.TestCase):
         self.assertTrue(payload["fallback"])
         self.assertEqual(payload["orchestrator"], "local")
 
+    def test_chat_multi_intent_greeting_and_medical_not_suppressed(self) -> None:
+        headers = self._register_and_get_auth_header()
+        session_id = f"s-{uuid.uuid4().hex[:12]}"
+        response = self.client.post(
+            "/api/chat",
+            headers=headers,
+            json={
+                "session_id": session_id,
+                "message": "xin chào bạn có biết warfarin với nhân sâm có tác dụng phụ gì không?",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertIn("xin chào", payload["answer"].lower())
+        self.assertGreaterEqual(len(payload["grounding"]["interactions"]), 1)
+
     def test_interaction_api_still_works(self) -> None:
         headers = self._register_and_get_auth_header()
         response = self.client.post(

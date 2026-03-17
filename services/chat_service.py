@@ -11,6 +11,7 @@ from models import (
     GroundingInteraction,
     InteractionDetail,
 )
+from services.chat_intent_service import ChatIntentService, IntentDetectionResult
 from services.chat_memory_service import ChatMemoryService, StoredChatMessage
 from services.gemini_service import GeminiService
 from services.graph_service import GraphEntity, KnowledgeGraphService
@@ -22,16 +23,33 @@ _CITATIONS = [
     "database/drug.json",
 ]
 
+_PRIMARY_INTENTS = {
+    "interaction_query",
+    "ask_side_effects",
+    "ask_recommendation",
+    "ask_mechanism",
+    "entity_classification",
+    "follow_up",
+    "related_entities",
+}
+
 
 @dataclass(frozen=True)
-class GraphAgentContext:
+class ResponsePlan:
+    intents: set[str]
     message: str
     message_ascii: str
     history: list[ChatHistoryMessage]
     entities: list[GraphEntity]
     interactions: list[dict[str, object]]
     entity_infos: list[dict[str, object]]
-    wants_brief: bool
+    used_memory_for_entities: bool
+    clarification_needed: bool
+    response_parts: dict[str, bool]
+
+    @property
+    def interaction_found(self) -> bool:
+        return bool(self.interactions)
 
 
 class ChatService:
@@ -40,17 +58,22 @@ class ChatService:
         graph: KnowledgeGraphService,
         memory_service: ChatMemoryService | None = None,
         gemini_service: GeminiService | None = None,
+        intent_service: ChatIntentService | None = None,
     ) -> None:
         self.graph = graph
         self.memory_service = memory_service
         self.gemini_service = gemini_service or GeminiService.from_env()
+        self.intent_service = intent_service or ChatIntentService()
         self.tool_registry = {
-            "greet_user": self.greet_user,
+            "detect_intents": self.detect_intents,
             "identify_medical_entities_via_graph": self.identify_medical_entities_via_graph,
+            "resolve_follow_up_entities": self.resolve_follow_up_entities,
             "check_interaction_pair_via_graph": self.check_interaction_pair_via_graph,
             "search_drug_info": self.search_drug_info,
+            "build_response_plan": self.build_response_plan,
             "build_grounded_prompt": self.build_grounded_prompt,
             "generate_gemini_response": self.generate_gemini_response,
+            "build_fallback_response": self.build_fallback_response,
         }
 
     @property
@@ -68,80 +91,6 @@ class ChatService:
             seen.add(key)
             output.append(item)
         return output
-
-    @staticmethod
-    def _recent_user_messages(history: list[ChatHistoryMessage], limit: int = 8) -> list[ChatHistoryMessage]:
-        users = [item for item in history if item.role == "user"]
-        return users[-limit:]
-
-    @staticmethod
-    def _is_classification_question(text_ascii: str) -> bool:
-        keywords = [
-            "la thuoc tay hay thao duoc",
-            "la thuoc tay",
-            "la thao duoc",
-            "phan loai",
-            "thuoc hay thao duoc",
-            "la gi",
-        ]
-        return any(keyword in text_ascii for keyword in keywords)
-
-    @staticmethod
-    def _is_reason_question(text_ascii: str) -> bool:
-        keywords = ["tai sao", "vi sao", "co che", "nguy hiem", "hau qua"]
-        return any(keyword in text_ascii for keyword in keywords)
-
-    @staticmethod
-    def _is_recommendation_question(text_ascii: str) -> bool:
-        keywords = ["nen lam gi", "khuyen nghi", "can lam gi", "xu ly", "co nen dung"]
-        return any(keyword in text_ascii for keyword in keywords)
-
-    @staticmethod
-    def _is_context_followup_question(text_ascii: str) -> bool:
-        markers = [
-            "tai sao",
-            "vi sao",
-            "co che",
-            "nguy hiem",
-            "hau qua",
-            "nen lam gi",
-            "khuyen nghi",
-            "can lam gi",
-            "co nen dung",
-            "truong hop nay",
-            "cap nay",
-            "cai nay",
-            "mon nay",
-            "thuoc nay",
-            "thao duoc nay",
-            "thuoc do",
-            "thao duoc do",
-            "giai thich lai",
-            "ngan gon hon",
-            "con cai do thi sao",
-            "con thuoc do thi sao",
-        ]
-        if any(marker in text_ascii for marker in markers):
-            return True
-
-        token_count = len([token for token in text_ascii.split(" ") if token])
-        return 0 < token_count <= 4
-
-    @staticmethod
-    def _wants_brief_answer(text_ascii: str) -> bool:
-        markers = ["ngan gon", "tom tat", "rut gon", "noi ngan", "ngan thoi"]
-        return any(marker in text_ascii for marker in markers)
-
-    @staticmethod
-    def _contains_uncertainty_language(answer_ascii: str) -> bool:
-        markers = [
-            "chua du du lieu",
-            "khong du bang chung",
-            "chua tim thay",
-            "du lieu local hien tai",
-            "khong the ket luan",
-        ]
-        return any(marker in answer_ascii for marker in markers)
 
     @staticmethod
     def _as_grounding_entities(items: list[GraphEntity]) -> list[GroundingEntity]:
@@ -165,66 +114,18 @@ class ChatService:
             )
         return output
 
-    def greet_user(self, message: str, message_ascii: str | None = None) -> str | None:
-        text_ascii = message_ascii or normalize_ascii(message)
-        greeting_keywords = {
-            "xin chao",
-            "chao",
-            "hello",
-            "hi",
-            "alo",
-            "chao ban",
-            "tro giup",
-            "help",
-        }
-        if text_ascii not in greeting_keywords and not text_ascii.startswith("xin chao"):
-            return None
+    @staticmethod
+    def _recent_user_messages(history: list[ChatHistoryMessage], limit: int = 8) -> list[ChatHistoryMessage]:
+        users = [item for item in history if item.role == "user"]
+        return users[-limit:]
 
-        return (
-            "Xin chào, tôi là trợ lý HerbaGuard AI. "
-            "Tôi có thể hỗ trợ kiểm tra tương tác giữa thuốc tây và thảo dược từ dữ liệu local, "
-            "và giải thích ngắn gọn lý do, hậu quả, khuyến nghị."
-        )
+    @staticmethod
+    def _history_has_entities(history: list[ChatHistoryMessage]) -> bool:
+        return any(item.role == "user" and len(item.content.strip()) >= 3 for item in history)
 
-    def _extract_entities_from_context(self, history: list[ChatHistoryMessage]) -> list[GraphEntity]:
-        user_messages = self._recent_user_messages(history, limit=8)
-        if not user_messages:
-            return []
-
-        latest_entities = self.graph.extract_entities(user_messages[-1].content)
-        if latest_entities:
-            return latest_entities
-
-        merged_text = " ".join(item.content for item in user_messages)
-        return self.graph.extract_entities(merged_text)
-
-    def identify_medical_entities_via_graph(self, message: str, history: list[ChatHistoryMessage]) -> list[GraphEntity]:
-        message_ascii = normalize_ascii(message)
-        extracted = self.graph.extract_entities(message, limit=8)
-        if extracted:
-            return self._deduplicate_entities(extracted)
-
-        if history and self._is_context_followup_question(message_ascii):
-            return self._deduplicate_entities(self._extract_entities_from_context(history))
-
-        return []
-
-    def check_interaction_pair_via_graph(self, drug: GraphEntity, herb: GraphEntity) -> list[dict[str, object]]:
-        return self.graph.get_interaction_evidence(drug, herb)
-
-    def search_drug_info(self, entity: GraphEntity) -> dict[str, object]:
-        node = self.graph.resolve_node(entity)
-        aliases = list(node.aliases[:8]) if node is not None else [entity.name]
-        related = [item.canonical_name for item in self.graph.related_entities(entity, limit=6)]
-
-        return {
-            "type": entity.type,
-            "id": entity.id,
-            "canonical_name": entity.name,
-            "aliases": aliases,
-            "related_entities": related,
-            "label_vi": "Thuốc Tây" if entity.type == "drug" else "Thảo Dược",
-        }
+    @staticmethod
+    def _contains_any(text_ascii: str, keywords: set[str]) -> bool:
+        return any(keyword in text_ascii for keyword in keywords)
 
     @staticmethod
     def _merge_histories(
@@ -244,11 +145,98 @@ class ChatService:
             merged.append(item)
         return merged[-limit:]
 
-    def _build_context(self, message: str, history: list[ChatHistoryMessage]) -> GraphAgentContext:
-        message_ascii = normalize_ascii(message)
-        entities = self.identify_medical_entities_via_graph(message, history)
-        entities = self._deduplicate_entities(entities)
+    def detect_intents(self, message: str, history: list[ChatHistoryMessage]) -> IntentDetectionResult:
+        return self.intent_service.detect_intents(message, history)
 
+    def resolve_follow_up_entities(
+        self,
+        message: str,
+        history: list[ChatHistoryMessage],
+        current_entities: list[GraphEntity],
+    ) -> tuple[list[GraphEntity], bool]:
+        if not history:
+            return current_entities, False
+
+        user_messages = self._recent_user_messages(history, limit=8)
+        if not user_messages:
+            return current_entities, False
+
+        latest_entities = self.graph.extract_entities(user_messages[-1].content, limit=8)
+        if not latest_entities:
+            merged_text = " ".join(item.content for item in user_messages)
+            latest_entities = self.graph.extract_entities(merged_text, limit=8)
+
+        if not latest_entities:
+            return current_entities, False
+
+        combined = self._deduplicate_entities(current_entities + latest_entities)
+        if len(combined) == len(current_entities):
+            return current_entities, False
+        return combined, True
+
+    def identify_medical_entities_via_graph(
+        self,
+        message: str,
+        history: list[ChatHistoryMessage],
+        intents: set[str] | None = None,
+    ) -> tuple[list[GraphEntity], bool]:
+        current = self.graph.extract_entities(message, limit=8)
+        entities = self._deduplicate_entities(current)
+        used_memory = False
+
+        intents = intents or set()
+        asks_pair_logic = bool({"interaction_query", "ask_side_effects", "ask_recommendation", "ask_mechanism"} & intents)
+        token_count = len([token for token in normalize_ascii(message).split(" ") if token])
+        short_elliptical_question = token_count <= 6
+        needs_context = (
+            "follow_up" in intents
+            or (asks_pair_logic and len(entities) == 1)
+            or (asks_pair_logic and len(entities) == 0 and short_elliptical_question)
+        )
+
+        if needs_context and self._history_has_entities(history):
+            entities, used_memory = self.resolve_follow_up_entities(message, history, entities)
+
+        return self._deduplicate_entities(entities), used_memory
+
+    def check_interaction_pair_via_graph(self, drug: GraphEntity, herb: GraphEntity) -> list[dict[str, object]]:
+        return self.graph.get_interaction_evidence(drug, herb)
+
+    def search_drug_info(self, entity: GraphEntity) -> dict[str, object]:
+        node = self.graph.resolve_node(entity)
+        aliases = list(node.aliases[:8]) if node is not None else [entity.name]
+        related = [item.canonical_name for item in self.graph.related_entities(entity, limit=6)]
+        return {
+            "type": entity.type,
+            "id": entity.id,
+            "canonical_name": entity.name,
+            "aliases": aliases,
+            "related_entities": related,
+            "label_vi": "Thuốc Tây" if entity.type == "drug" else "Thảo Dược",
+        }
+
+    def _enrich_intents(self, intents: set[str], entities: list[GraphEntity], message_ascii: str) -> set[str]:
+        enriched = set(intents)
+        has_drug = any(item.type == "drug" for item in entities)
+        has_herb = any(item.type == "herb" for item in entities)
+
+        if has_drug and has_herb:
+            if {"ask_side_effects", "ask_recommendation", "ask_mechanism"}.intersection(enriched):
+                enriched.add("interaction_query")
+            if "interaction_query" not in enriched and "co" in message_ascii and "khong" in message_ascii:
+                enriched.add("interaction_query")
+
+        if not enriched:
+            enriched.add("clarification_needed")
+
+        return enriched
+
+    def build_response_plan(self, message: str, history: list[ChatHistoryMessage]) -> ResponsePlan:
+        detection = self.detect_intents(message, history)
+        intents = set(detection.intents)
+        entities, used_memory = self.identify_medical_entities_via_graph(message, history, intents=intents)
+
+        intents = self._enrich_intents(intents, entities, detection.message_ascii)
         drugs = [item for item in entities if item.type == "drug"]
         herbs = [item for item in entities if item.type == "herb"]
 
@@ -256,118 +244,239 @@ class ChatService:
         for drug in drugs:
             for herb in herbs:
                 interactions.extend(self.check_interaction_pair_via_graph(drug, herb))
-
         interactions.sort(key=lambda row: (0 if row["severity"] == "high" else 1, row["drug_name"], row["herb_name"]))
-        entity_infos = [self.search_drug_info(item) for item in entities[:4]]
 
-        return GraphAgentContext(
+        clarification_needed = False
+        asks_pair_logic = bool({"interaction_query", "ask_side_effects", "ask_recommendation", "ask_mechanism"} & intents)
+        if asks_pair_logic and not (drugs and herbs):
+            clarification_needed = True
+            intents.add("clarification_needed")
+
+        entity_infos = [self.search_drug_info(item) for item in entities[:4]]
+        primary_medical_present = bool(_PRIMARY_INTENTS.intersection(intents))
+        has_explicit_primary = bool(
+            {
+                "interaction_query",
+                "ask_side_effects",
+                "ask_recommendation",
+                "ask_mechanism",
+                "entity_classification",
+                "related_entities",
+            }
+            & intents
+        )
+
+        response_parts = {
+            "include_greeting": "greeting" in intents,
+            "include_help": "help" in intents and not primary_medical_present,
+            "include_interaction_answer": (
+                ("interaction_query" in intents and not clarification_needed)
+                or ("follow_up" in intents and not has_explicit_primary and bool(interactions))
+            ),
+            "include_side_effects": "ask_side_effects" in intents and bool(interactions) and not clarification_needed,
+            "include_recommendation": "ask_recommendation" in intents and bool(interactions) and not clarification_needed,
+            "include_mechanism": "ask_mechanism" in intents and bool(interactions) and not clarification_needed,
+            "include_classification": "entity_classification" in intents and bool(entities),
+            "include_related_entities": "related_entities" in intents and bool(entities),
+        }
+
+        return ResponsePlan(
+            intents=intents,
             message=message.strip(),
-            message_ascii=message_ascii,
+            message_ascii=detection.message_ascii,
             history=history[-10:],
             entities=entities,
             interactions=interactions,
             entity_infos=entity_infos,
-            wants_brief=self._wants_brief_answer(message_ascii),
+            used_memory_for_entities=used_memory,
+            clarification_needed=clarification_needed,
+            response_parts=response_parts,
         )
 
-    def build_grounded_prompt(self, context: GraphAgentContext) -> str:
-        history_lines = [f"{item.role}: {item.content}" for item in context.history[-8:]]
-        bundle = {
-            "entities": [item.__dict__ for item in context.entities],
-            "interactions": context.interactions,
-            "entity_infos": context.entity_infos,
+    def _plan_as_json(self, plan: ResponsePlan) -> dict[str, object]:
+        primary_evidence = None
+        if plan.interactions:
+            first = plan.interactions[0]
+            primary_evidence = {
+                "mechanism": first.get("mechanism", ""),
+                "possible_consequences": first.get("possible_consequences", []),
+                "recommendation": first.get("recommendation", ""),
+            }
+
+        return {
+            "intents": sorted(plan.intents),
+            "entities": [item.__dict__ for item in plan.entities],
+            "interaction_found": bool(plan.interactions),
+            "evidence": primary_evidence,
+            "used_memory": plan.used_memory_for_entities,
+            "clarification_needed": plan.clarification_needed,
+            "response_parts": plan.response_parts,
+            "interactions": plan.interactions,
+            "entity_infos": plan.entity_infos,
         }
 
-        response_style = "ngắn gọn 2-4 câu" if context.wants_brief else "rõ ràng, súc tích và có cấu trúc"
+    def build_grounded_prompt(self, plan: ResponsePlan) -> str:
+        history_lines = [f"{item.role}: {item.content}" for item in plan.history[-8:]]
+        plan_json = self._plan_as_json(plan)
         return (
-            f"Người dùng hỏi: {context.message}\n\n"
+            f"Người dùng: {plan.message}\n\n"
             "Lịch sử gần nhất:\n"
             + ("\n".join(history_lines) if history_lines else "(không có)")
-            + "\n\nKHUNG_BANG_CHUNG_JSON:\n"
-            + json.dumps(bundle, ensure_ascii=False, indent=2)
-            + "\n\nYÊU CẦU TRẢ LỜI:\n"
-            + "1) Chỉ dùng bằng chứng trong KHUNG_BANG_CHUNG_JSON.\n"
-            + "2) Nếu không đủ bằng chứng, phải nói rõ không đủ dữ liệu local để kết luận.\n"
-            + "3) Không bịa cơ chế, hậu quả, khuyến nghị ngoài dữ liệu.\n"
-            + "4) Dùng tiếng Việt, giọng tư vấn an toàn.\n"
-            + f"5) Trình bày {response_style}.\n"
-            + "6) Nếu có tương tác, nêu mức độ + cơ chế + khuyến nghị.\n"
-            + "7) Nếu chỉ có 1 thực thể, nêu đó là thuốc tây hay thảo dược và gợi ý thực thể liên quan.\n"
+            + "\n\nRESPONSE_PLAN_JSON:\n"
+            + json.dumps(plan_json, ensure_ascii=False, indent=2)
+            + "\n\nYÊU CẦU:\n"
+            + "1) Trả lời bằng tiếng Việt.\n"
+            + "2) Bắt buộc xử lý tất cả phần `response_parts` được bật true.\n"
+            + "3) Nếu include_greeting=true thì chào ngắn gọn 1 câu.\n"
+            + "4) Nếu có câu hỏi y khoa hợp lệ thì không được trả lời social-only.\n"
+            + "5) Chỉ dùng dữ liệu trong RESPONSE_PLAN_JSON, không bịa kiến thức ngoài.\n"
+            + "6) Nếu clarification_needed=true thì yêu cầu người dùng nêu rõ 1 thuốc tây + 1 thảo dược.\n"
+            + "7) Nếu include_side_effects=true thì nêu hậu quả/tác dụng phụ từ evidence.\n"
+            + "8) Nếu include_recommendation=true thì nêu khuyến nghị từ evidence.\n"
+            + "9) Tránh dài dòng, rõ ràng, an toàn.\n"
         )
 
-    def generate_gemini_response(self, context: GraphAgentContext) -> str | None:
-        prompt = self.build_grounded_prompt(context)
+    def generate_gemini_response(self, plan: ResponsePlan) -> str | None:
         system_instruction = (
-            "Bạn là trợ lý HerbaGuard AI cho người dùng Việt Nam. "
-            "Bạn chỉ được trả lời dựa trên bằng chứng đã cung cấp; không thêm kiến thức y khoa bên ngoài. "
-            "Nếu dữ liệu thiếu, phải nói rõ thiếu dữ liệu local."
+            "Bạn là trợ lý HerbaGuard AI. Bạn chỉ được dùng dữ liệu cung cấp trong plan để trả lời. "
+            "Không suy diễn ngoài dữ liệu local. Không bỏ sót intent quan trọng."
         )
+        prompt = self.build_grounded_prompt(plan)
         return self.gemini_service.generate_grounded_answer(prompt=prompt, system_instruction=system_instruction)
 
-    def _generate_local_grounded_response(self, context: GraphAgentContext) -> tuple[str, bool]:
-        entities = context.entities
-        interactions = context.interactions
-        drugs = [item for item in entities if item.type == "drug"]
-        herbs = [item for item in entities if item.type == "herb"]
+    @staticmethod
+    def _answer_has_greeting(answer_ascii: str) -> bool:
+        return "xin chao" in answer_ascii or "chao" in answer_ascii or "hello" in answer_ascii
 
-        if interactions:
-            first = interactions[0]
-            pair_label = f"{first['drug_name']} và {first['herb_name']}"
-            severity_label = "cao" if str(first["severity"]) == "high" else "cần theo dõi"
+    def _postprocess_answer(self, answer: str, plan: ResponsePlan) -> str:
+        text = answer.strip()
+        ascii_text = normalize_ascii(text)
 
-            if self._is_reason_question(context.message_ascii):
+        if plan.response_parts["include_greeting"] and not self._answer_has_greeting(ascii_text):
+            text = "Xin chào bạn. " + text
+            ascii_text = normalize_ascii(text)
+
+        if plan.response_parts["include_interaction_answer"] and plan.interactions:
+            first = plan.interactions[0]
+            pair_hint = f"{first['drug_name']} và {first['herb_name']}"
+            if normalize_ascii(str(first["drug_name"])) not in ascii_text or normalize_ascii(str(first["herb_name"])) not in ascii_text:
+                text += f"\nDữ liệu local ghi nhận cặp {pair_hint} có tương tác."
+                ascii_text = normalize_ascii(text)
+
+        if plan.response_parts["include_interaction_answer"] and not plan.interactions:
+            drugs = [item for item in plan.entities if item.type == "drug"]
+            herbs = [item for item in plan.entities if item.type == "herb"]
+            if drugs and herbs and "chua tim thay tuong tac" not in ascii_text:
+                text += "\nHiện chưa tìm thấy tương tác giữa các cặp bạn hỏi trong dữ liệu local hiện có."
+                ascii_text = normalize_ascii(text)
+
+        if plan.response_parts["include_classification"]:
+            if "thuoc tay" not in ascii_text and "thao duoc" not in ascii_text:
+                chunks = []
+                for entity in plan.entities[:2]:
+                    label = "thuốc tây" if entity.type == "drug" else "thảo dược"
+                    chunks.append(f"'{entity.name}' là {label}")
+                if chunks:
+                    text += "\n" + "; ".join(chunks) + "."
+                    ascii_text = normalize_ascii(text)
+
+        if plan.clarification_needed and "nêu rõ" not in ascii_text:
+            text += "\nMình cần bạn nêu rõ 1 thuốc tây và 1 thảo dược để kiểm tra chính xác."
+
+        if plan.response_parts["include_side_effects"] and plan.interactions:
+            if "tac dung phu" not in ascii_text and "hau qua" not in ascii_text:
+                consequences = plan.interactions[0].get("possible_consequences", [])
+                if consequences:
+                    text += f"\nHậu quả có thể gặp: {consequences[0]}."
+
+        if plan.response_parts["include_recommendation"] and plan.interactions:
+            if "khuyen nghi" not in ascii_text and "nen" not in ascii_text:
+                text += f"\nKhuyến nghị: {plan.interactions[0].get('recommendation', '')}".rstrip()
+
+        return text.strip()
+
+    def build_fallback_response(self, plan: ResponsePlan) -> tuple[str, bool]:
+        lines: list[str] = []
+        fallback = False
+
+        if plan.response_parts["include_greeting"]:
+            lines.append("Xin chào bạn.")
+
+        if plan.clarification_needed:
+            names = ", ".join(item.name for item in plan.entities[:2]) if plan.entities else ""
+            if names:
+                lines.append(f"Mình đã nhận diện: {names}.")
+            lines.append("Bạn vui lòng nêu rõ 1 thuốc tây và 1 thảo dược để mình kiểm tra tương tác chính xác.")
+            return " ".join(lines).strip(), True
+
+        if plan.response_parts["include_classification"] and plan.entities:
+            for entity in plan.entities[:2]:
+                label = "thuốc tây" if entity.type == "drug" else "thảo dược"
+                lines.append(f"'{entity.name}' được phân loại là {label}.")
+
+        if plan.response_parts["include_interaction_answer"]:
+            if plan.interactions:
+                if len(plan.interactions) == 1:
+                    first = plan.interactions[0]
+                    level = "cao" if str(first["severity"]) == "high" else "cần theo dõi"
+                    lines.append(
+                        f"Dữ liệu local cho thấy {first['drug_name']} và {first['herb_name']} có nguy cơ tương tác mức {level}."
+                    )
+                else:
+                    pair_lines = [
+                        f"- {row['drug_name']} + {row['herb_name']}: mức {'cao' if row['severity'] == 'high' else 'cần theo dõi'}"
+                        for row in plan.interactions[:4]
+                    ]
+                    lines.append("Có các tương tác được ghi nhận:\n" + "\n".join(pair_lines))
+            else:
+                drugs = [item for item in plan.entities if item.type == "drug"]
+                herbs = [item for item in plan.entities if item.type == "herb"]
+                if drugs and herbs:
+                    lines.append("Hiện chưa tìm thấy tương tác giữa các cặp bạn hỏi trong dữ liệu local hiện có.")
+
+        if plan.interactions:
+            first = plan.interactions[0]
+            if plan.response_parts["include_mechanism"]:
+                lines.append(f"Cơ chế: {first['mechanism']}")
+            if plan.response_parts["include_side_effects"]:
                 consequences = first.get("possible_consequences", [])
-                top_cons = f" Hậu quả có thể gặp: {consequences[0]}." if consequences else ""
-                return (
-                    f"Dữ liệu local cho thấy {pair_label} có nguy cơ tương tác mức {severity_label}. "
-                    f"Cơ chế chính: {first['mechanism']}.{top_cons}",
-                    False,
-                )
+                if consequences:
+                    lines.append("Hậu quả/tác dụng phụ có thể gặp: " + "; ".join(str(item) for item in consequences[:3]) + ".")
+            if plan.response_parts["include_recommendation"]:
+                lines.append("Khuyến nghị: " + str(first["recommendation"]))
 
-            if self._is_recommendation_question(context.message_ascii):
-                return (
-                    f"Với cặp {pair_label}, khuyến nghị trong dữ liệu là: {first['recommendation']}. "
-                    "Bạn nên trao đổi trực tiếp với bác sĩ hoặc dược sĩ trước khi dùng chung.",
-                    False,
-                )
+        if plan.response_parts["include_related_entities"] and plan.entity_infos:
+            related = []
+            for info in plan.entity_infos[:2]:
+                related.extend(info.get("related_entities", [])[:3])
+            unique_related = []
+            seen = set()
+            for item in related:
+                key = normalize_ascii(str(item))
+                if key in seen or not key:
+                    continue
+                seen.add(key)
+                unique_related.append(str(item))
+            if unique_related:
+                lines.append("Bạn có thể kiểm tra thêm với: " + ", ".join(unique_related[:5]) + ".")
 
-            interaction_lines = [
-                f"- {item['drug_name']} + {item['herb_name']}: mức {('cao' if item['severity'] == 'high' else 'cần theo dõi')}"
-                for item in interactions[:4]
-            ]
-            return (
-                "Có, dữ liệu local ghi nhận tương tác thuốc tây - thảo dược:\n"
-                + "\n".join(interaction_lines)
-                + "\nBạn có thể hỏi thêm: 'Tại sao nguy hiểm?' hoặc 'Tôi nên làm gì?'.",
-                False,
+        if plan.response_parts["include_help"]:
+            lines.append(
+                "Mình có thể giúp kiểm tra tương tác thuốc tây - thảo dược. "
+                "Ví dụ: 'warfarin và nhân sâm có tương tác không?'."
             )
 
-        if drugs and herbs:
-            return (
-                "Hiện chưa tìm thấy tương tác giữa các cặp bạn hỏi trong cơ sở dữ liệu local hiện có. "
-                "Điều này không thay thế tư vấn y khoa nếu bạn có triệu chứng bất thường.",
-                False,
+        if not lines:
+            fallback = True
+            lines.append(
+                "Xin lỗi, mình chưa đủ dữ liệu local để kết luận câu hỏi này. "
+                "Bạn hãy nêu rõ tên thuốc tây và thảo dược cụ thể."
             )
 
-        if len(entities) == 1:
-            entity = entities[0]
-            entity_info = self.search_drug_info(entity)
-            related = [str(item) for item in entity_info.get("related_entities", [])]
-            suggestion_text = f" Bạn có thể kiểm tra thêm với: {', '.join(related[:3])}." if related else ""
-            return (
-                f"Tôi đã nhận diện '{entity.name}' là {entity_info['label_vi']}, nhưng chưa đủ cặp thuốc tây + thảo dược để kết luận tương tác."
-                + suggestion_text,
-                False,
-            )
+        return " ".join(lines).strip(), fallback
 
-        return (
-            "Xin lỗi, tôi chưa tìm đủ bằng chứng trong dữ liệu local để trả lời chắc chắn câu hỏi này. "
-            "Bạn hãy nêu rõ tên thuốc tây và thảo dược cụ thể (ví dụ: warfarin và nhân sâm).",
-            True,
-        )
-
-    def _build_grounding(self, context: GraphAgentContext) -> ChatGrounding:
-        interactions = self._as_grounding_interactions(context.interactions)
+    def _build_grounding(self, plan: ResponsePlan) -> ChatGrounding:
+        interactions = self._as_grounding_interactions(plan.interactions)
         primary_evidence = None
         if interactions:
             first = interactions[0]
@@ -378,55 +487,41 @@ class ChatService:
             )
 
         return ChatGrounding(
-            entities=self._as_grounding_entities(context.entities),
+            entities=self._as_grounding_entities(plan.entities),
             interactions=interactions,
             interaction_found=bool(interactions),
             evidence=primary_evidence,
         )
 
     def generate_response(self, message: str, history: list[ChatHistoryMessage]) -> ChatResponse:
-        msg_clean = message.strip()
-        text_ascii = normalize_ascii(msg_clean)
+        plan = self.build_response_plan(message, history)
+        grounding = self._build_grounding(plan)
 
-        greeting = self.greet_user(msg_clean, text_ascii)
-        if greeting:
-            return ChatResponse(
-                answer=greeting,
-                grounding=ChatGrounding(entities=[], interactions=[], interaction_found=False),
-                citations=_CITATIONS,
-                fallback=False,
-                orchestrator="local",
-            )
-
-        context = self._build_context(msg_clean, history)
-        grounding = self._build_grounding(context)
-
+        answer_text = None
         used_gemini = False
-        answer = None
+
         if self.gemini_enabled:
-            answer = self.generate_gemini_response(context)
-            if answer:
+            gemini_answer = self.generate_gemini_response(plan)
+            if gemini_answer:
+                answer_text = self._postprocess_answer(gemini_answer, plan)
                 used_gemini = True
 
-        if answer and not context.entities and not context.interactions:
-            # Keep unknown-answer path strictly honest to local evidence.
-            if not self._contains_uncertainty_language(normalize_ascii(answer)):
-                answer = None
-                used_gemini = False
+        fallback_answer, fallback_flag = self.build_fallback_response(plan)
+        if not answer_text:
+            answer_text = fallback_answer
 
-        local_answer, local_fallback = self._generate_local_grounded_response(context)
-        if not answer:
-            answer = local_answer
-
-        fallback_flag = local_fallback
-        orchestrator = "gemini" if used_gemini else "local"
+        # Contract:
+        # - `fallback=True` when chatbot does not use Gemini orchestrator (local grounded path),
+        #   or when evidence is insufficient and clarification fallback is required.
+        # - `fallback=False` only when Gemini path is used successfully without fallback content.
+        effective_fallback = fallback_flag or (not used_gemini)
 
         return ChatResponse(
-            answer=answer,
+            answer=answer_text,
             grounding=grounding,
             citations=_CITATIONS,
-            fallback=fallback_flag,
-            orchestrator=orchestrator,
+            fallback=effective_fallback,
+            orchestrator="gemini" if used_gemini else "local",
         )
 
     def chat_with_memory(
@@ -451,7 +546,7 @@ class ChatService:
 
         response = self.generate_response(message, merged_history)
         response.session_id = session_id
-        response.used_memory = used_memory
+        response.used_memory = used_memory or ("follow_up" in self.detect_intents(message, merged_history).intents)
 
         self.memory_service.append_message(
             user_id,

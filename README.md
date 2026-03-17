@@ -29,7 +29,7 @@ Core flow vẫn chạy **offline/local**. Gemini là lớp tăng cường hội 
   - endpoint `/api/chat`
   - memory backend theo `user_id + session_id` (SQLite)
   - endpoint history: `GET/DELETE /api/chat/history`
-  - graph-agent style tools: `greet_user`, `identify_medical_entities_via_graph`, `check_interaction_pair_via_graph`, `search_drug_info`
+  - multi-intent planning tools: `detect_intents`, `identify_medical_entities_via_graph`, `resolve_follow_up_entities`, `check_interaction_pair_via_graph`, `search_drug_info`, `build_response_plan`
   - Gemini orchestration khi có `GOOGLE_API_KEY`
   - trả lời tiếng Việt dựa trên bằng chứng graph/data
   - trả `grounding` + `citations` + `orchestrator`
@@ -55,6 +55,7 @@ Core flow vẫn chạy **offline/local**. Gemini là lớp tăng cường hội 
 ├── services/
 │   ├── auth_service.py
 │   ├── chat_memory_service.py
+│   ├── chat_intent_service.py
 │   ├── chat_service.py
 │   ├── data_loader.py
 │   ├── gemini_service.py
@@ -211,7 +212,9 @@ Xóa lịch sử hội thoại của phiên chat đó.
   - graph query methods: resolve/search/check pair/evidence/related entities
 - `ChatService`:
   - lấy ngữ cảnh hội thoại từ `ChatMemoryService` (SQLite)
-  - dùng graph-agent-style tools (greeting/entity lookup/interaction lookup/entity info)
+  - detect đa intent trong cùng một câu (greeting + medical + side effects/recommendation...)
+  - resolve entity bằng graph + memory cho follow-up
+  - build response plan trước khi sinh câu trả lời
   - build grounded prompt từ graph evidence + memory
   - gọi `GeminiService` để tổng hợp câu trả lời tiếng Việt khi có key
   - fallback sang local grounded response khi key thiếu/lỗi
@@ -231,7 +234,7 @@ Nội dung test:
 - dedup inputs
 - graph resolver + graph tool methods
 - interaction matching + severity
-- chat grounded + follow-up + fallback
+- chat multi-intent (greeting + medical trong cùng câu) + follow-up + fallback
 - session memory history APIs
 - behavior when Gemini key is absent
 
