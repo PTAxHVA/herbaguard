@@ -8,6 +8,9 @@ README.md
 __pycache__/
 *.py[cod]
 *$py.class
+*.db
+*.sqlite3
+herbaguard_auth.db
 
 # Virtual Environments
 herb_env/

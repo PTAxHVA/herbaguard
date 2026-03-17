@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HerbaGuard - Cài Đặt</title>
-    
+
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="settings.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-     <nav class="top-navbar">
+    <nav class="top-navbar">
         <div class="nav-container">
             <div class="logo-group" id="nav-logo">
                 <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
@@ -19,9 +20,10 @@
             </div>
 
             <div class="desktop-menu">
-                <a href="index.html" class="active">Trang Chủ</a>
-                <a href="check.html">Quét Thuốc</a>
+                <a href="index.html">Trang Chủ</a>
+                <a href="check.html">Kiểm Tra Tương Tác</a>
                 <a href="medicines.html">Tủ Thuốc</a>
+                <a href="chat.html">Trợ Lý AI</a>
             </div>
 
             <div class="user-group">
@@ -29,85 +31,135 @@
                     <i class="fa-regular fa-bell"></i>
                     <span class="notification-dot"></span>
                 </button>
-                <img src="https://ui-avatars.com/api/?name=Louis&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
+                <img src="https://ui-avatars.com/api/?name=User&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
                 <div class="user-info">
                     <p id="greeting-text">Xin chào,</p>
-                    <p>Louis Tran</p>
+                    <p>Người dùng</p>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="main-content" style="max-width: 600px;">
-        
-        <div style="display: flex; align-items: center; gap: 20px; background: var(--white); padding: 24px; border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 32px;">
-            <img src="https://ui-avatars.com/api/?name=Louis&background=10B981&color=fff" alt="Avatar" style="width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--emerald-50);">
-            <div>
-                <h2 style="font-size: 22px; font-weight: 800; color: var(--slate-800);">Louis Tran</h2>
-                <p style="color: var(--slate-500); font-size: 15px; margin-top: 4px;">louis.tran@example.com</p>
-                <span style="display: inline-block; margin-top: 8px; background: var(--emerald-50); color: var(--emerald-600); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 12px;">Thành viên Cao cấp</span>
-            </div>
-        </div>
+    <main class="main-content" style="max-width: 720px;">
 
-        <h3 style="font-size: 16px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; margin-bottom: 16px; padding-left: 8px;">Tùy chỉnh Trải nghiệm</h3>
-
-        <div style="background: var(--white); border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 32px;">
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--slate-100);">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div class="icon-box" style="background: var(--amber-50); color: var(--amber-500); width: 40px; height: 40px;"><i class="fa-solid fa-volume-high"></i></div>
-                    <div>
-                        <h4 style="font-size: 16px; font-weight: 600;">Đọc bằng Giọng nói</h4>
-                        <p style="font-size: 13px; color: var(--slate-500);">Tự động đọc kết quả tương tác</p>
-                    </div>
-                </div>
-                <div style="width: 44px; height: 24px; background: var(--emerald-500); border-radius: 12px; position: relative; cursor: pointer;">
-                    <div style="width: 20px; height: 20px; background: var(--white); border-radius: 50%; position: absolute; top: 2px; right: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div>
-                </div>
+        <section class="profile-card">
+            <img id="profile-avatar" src="https://ui-avatars.com/api/?name=User&background=10B981&color=fff" alt="Avatar" class="profile-avatar">
+            <div class="profile-content">
+                <h2 id="profile-name">Người dùng</h2>
+                <p id="profile-email">user@example.com</p>
+                <span class="profile-badge">Tài khoản đăng nhập cục bộ</span>
             </div>
+        </section>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--slate-100);">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div class="icon-box" style="background: var(--blue-50); color: var(--blue-500); width: 40px; height: 40px;"><i class="fa-solid fa-text-height"></i></div>
-                    <div>
-                        <h4 style="font-size: 16px; font-weight: 600;">Cỡ chữ lớn</h4>
-                        <p style="font-size: 13px; color: var(--slate-500);">Tối ưu cho người cao tuổi</p>
-                    </div>
-                </div>
-                <div style="width: 44px; height: 24px; background: var(--slate-200); border-radius: 12px; position: relative; cursor: pointer;">
-                    <div style="width: 20px; height: 20px; background: var(--white); border-radius: 50%; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div>
-                </div>
-            </div>
+        <h3 class="settings-heading">Tùy chỉnh trải nghiệm</h3>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; cursor: pointer;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div class="icon-box" style="background: var(--emerald-50); color: var(--emerald-500); width: 40px; height: 40px;"><i class="fa-solid fa-circle-play"></i></div>
-                    <h4 style="font-size: 16px; font-weight: 600;">Video hướng dẫn sử dụng</h4>
-                </div>
-                <i class="fa-solid fa-chevron-right" style="color: var(--slate-300);"></i>
-            </div>
-        </div>
+        <section class="settings-card">
+            <label class="settings-row" for="toggleVoice">
+                <span class="settings-meta">
+                    <span class="icon-box" style="background: var(--amber-50); color: var(--amber-500);"><i class="fa-solid fa-volume-high"></i></span>
+                    <span>
+                        <strong>Đọc bằng giọng nói</strong>
+                        <small>Bật đọc tóm tắt kết quả tương tác</small>
+                    </span>
+                </span>
+                <input id="toggleVoice" type="checkbox">
+            </label>
 
-        <h3 style="font-size: 16px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; margin-bottom: 16px; padding-left: 8px;">Hỗ trợ</h3>
+            <label class="settings-row" for="toggleLargeText">
+                <span class="settings-meta">
+                    <span class="icon-box" style="background: var(--blue-50); color: var(--blue-500);"><i class="fa-solid fa-text-height"></i></span>
+                    <span>
+                        <strong>Cỡ chữ lớn</strong>
+                        <small>Tăng khả năng đọc cho người cao tuổi</small>
+                    </span>
+                </span>
+                <input id="toggleLargeText" type="checkbox">
+            </label>
 
-        <div style="background: var(--white); border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; cursor: pointer; border-bottom: 1px solid var(--slate-100);">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div class="icon-box" style="background: var(--slate-100); color: var(--slate-600); width: 40px; height: 40px;"><i class="fa-solid fa-headset"></i></div>
-                    <h4 style="font-size: 16px; font-weight: 600;">Liên hệ Bác sĩ / CSKH</h4>
-                </div>
-                <i class="fa-solid fa-chevron-right" style="color: var(--slate-300);"></i>
+            <label class="settings-row" for="selectTheme">
+                <span class="settings-meta">
+                    <span class="icon-box" style="background: var(--emerald-50); color: var(--emerald-600);"><i class="fa-solid fa-circle-half-stroke"></i></span>
+                    <span>
+                        <strong>Chế độ giao diện</strong>
+                        <small>Light/Dark mode</small>
+                    </span>
+                </span>
+                <select id="selectTheme" class="input-control compact-select">
+                    <option value="light">Sáng</option>
+                    <option value="dark">Tối</option>
+                </select>
+            </label>
+
+            <label class="settings-row" for="toggleNotifications">
+                <span class="settings-meta">
+                    <span class="icon-box" style="background: var(--slate-100); color: var(--slate-600);"><i class="fa-regular fa-bell"></i></span>
+                    <span>
+                        <strong>Thông báo trình duyệt</strong>
+                        <small>Nhận nhắc lịch uống thuốc trên trình duyệt</small>
+                    </span>
+                </span>
+                <input id="toggleNotifications" type="checkbox">
+            </label>
+
+            <div class="settings-actions">
+                <button class="btn-primary" id="btnSaveSettings" type="button"><i class="fa-solid fa-floppy-disk"></i> Lưu cài đặt</button>
+                <button class="btn-primary btn-light" id="btnTestVoice" type="button"><i class="fa-solid fa-play"></i> Nghe thử giọng đọc</button>
             </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; cursor: pointer;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div class="icon-box" style="background: var(--red-50); color: var(--red-500); width: 40px; height: 40px;"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
-                    <h4 style="font-size: 16px; font-weight: 600; color: var(--red-500);">Đăng xuất</h4>
-                </div>
-            </div>
-        </div>
+            <div id="settingsMessage" class="status-message hidden"></div>
+        </section>
+
+        <h3 class="settings-heading">Hỗ trợ</h3>
+
+        <section class="settings-card">
+            <button class="link-row" id="btnGuideVideo" type="button">
+                <span class="settings-meta">
+                    <span class="icon-box" style="background: var(--emerald-50); color: var(--emerald-600);"><i class="fa-solid fa-circle-play"></i></span>
+                    <span>
+                        <strong>Video hướng dẫn sử dụng</strong>
+                        <small>Mở hướng dẫn nhanh 5 bước demo</small>
+                    </span>
+                </span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+
+            <a class="link-row" id="btnSupport" href="mailto:support@herbaguard.local?subject=Ho%20tro%20HerbaGuard">
+                <span class="settings-meta">
+                    <span class="icon-box" style="background: var(--slate-100); color: var(--slate-600);"><i class="fa-solid fa-headset"></i></span>
+                    <span>
+                        <strong>Liên hệ CSKH / Bác sĩ</strong>
+                        <small>Email hỗ trợ: support@herbaguard.local</small>
+                    </span>
+                </span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+
+            <button id="btn-logout" class="link-row logout-row" type="button">
+                <span class="settings-meta">
+                    <span class="icon-box" style="background: var(--red-50); color: var(--red-500);"><i class="fa-solid fa-arrow-right-from-bracket"></i></span>
+                    <span>
+                        <strong>Đăng xuất</strong>
+                        <small>Kết thúc phiên đăng nhập hiện tại</small>
+                    </span>
+                </span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </section>
 
     </main>
+
+    <dialog id="guideDialog" class="guide-dialog">
+        <h3>Hướng dẫn nhanh</h3>
+        <ol>
+            <li>Mở <strong>Kiểm Tra Tương Tác</strong> và nhập tối thiểu 2 mục.</li>
+            <li>Nhấn <strong>Kiểm tra tương tác ngay</strong> để phân tích.</li>
+            <li>Xem kết quả, cơ chế, hậu quả và khuyến nghị.</li>
+            <li>Nhấn <strong>Hỏi Trợ Lý AI</strong> để hỏi thêm theo dữ liệu local.</li>
+            <li>Quản lý thuốc và lịch nhắc trong <strong>Tủ Thuốc</strong>.</li>
+        </ol>
+        <div class="guide-actions">
+            <button id="btnCloseGuide" class="btn-primary" type="button">Đóng</button>
+        </div>
+    </dialog>
 
     <nav class="bottom-nav">
         <a href="index.html" class="nav-item">
@@ -116,7 +168,7 @@
         </a>
         <a href="check.html" class="nav-item">
             <i class="fa-solid fa-camera"></i>
-            <span>Quét</span>
+            <span>Kiểm Tra</span>
         </a>
         <a href="medicines.html" class="nav-item">
             <i class="fa-solid fa-pills"></i>
@@ -127,6 +179,9 @@
             <span>Cá Nhân</span>
         </a>
     </nav>
+
+    <script src="api.js"></script>
     <script src="app.js"></script>
+    <script src="settings.js"></script>
 </body>
 </html>

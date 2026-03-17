@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HerbaGuard - Trợ Lý AI</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="chat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="top-navbar">
+        <div class="nav-container">
+            <div class="logo-group" id="nav-logo">
+                <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+                <span class="logo-text">HerbaGuard</span>
+            </div>
+
+            <div class="desktop-menu">
+                <a href="index.html">Trang Chủ</a>
+                <a href="check.html">Kiểm Tra Tương Tác</a>
+                <a href="medicines.html">Tủ Thuốc</a>
+                <a href="chat.html" class="active">Trợ Lý AI</a>
+            </div>
+
+            <div class="user-group">
+                <button class="btn-icon" id="btn-notification">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <a href="settings.html">
+                    <img src="https://ui-avatars.com/api/?name=User&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
+                </a>
+                <div class="user-info">
+                    <p id="greeting-text">Xin chào,</p>
+                    <p>Người dùng</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content chat-layout">
+        <section class="chat-card">
+            <div class="chat-header">
+                <div>
+                    <h1>Trợ Lý HerbaGuard AI</h1>
+                    <p>Trả lời dựa trên dữ liệu local: thuốc tây, thảo dược và quan hệ tương tác.</p>
+                </div>
+                <button class="btn-primary btn-light" id="btnClearChat" type="button"><i class="fa-solid fa-rotate-left"></i> Xóa hội thoại</button>
+            </div>
+
+            <div class="quick-question-row" id="quickQuestionRow">
+                <button class="quick-question" type="button" data-question="Nhân sâm có tương tác với warfarin không?">Nhân sâm + warfarin?</button>
+                <button class="quick-question" type="button" data-question="Aspirin có tương tác với nghệ không?">Aspirin + nghệ?</button>
+                <button class="quick-question" type="button" data-question="Tại sao nguy hiểm?">Tại sao nguy hiểm?</button>
+                <button class="quick-question" type="button" data-question="Tôi nên làm gì?">Tôi nên làm gì?</button>
+                <button class="quick-question" type="button" data-question="Gừng là thuốc tây hay thảo dược?">Gừng là loại gì?</button>
+            </div>
+
+            <div id="chatLog" class="chat-log"></div>
+            <div id="typingIndicator" class="typing-indicator hidden">Trợ lý đang trả lời...</div>
+
+            <form id="chatForm" class="chat-compose" novalidate>
+                <textarea id="chatInput" placeholder="Đặt câu hỏi về tương tác thuốc tây và thảo dược..." maxlength="4000"></textarea>
+                <button id="btnSendChat" class="btn-primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Gửi</button>
+            </form>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <i class="fa-solid fa-house"></i>
+            <span>Trang Chủ</span>
+        </a>
+        <a href="check.html" class="nav-item">
+            <i class="fa-solid fa-camera"></i>
+            <span>Kiểm Tra</span>
+        </a>
+        <a href="medicines.html" class="nav-item">
+            <i class="fa-solid fa-pills"></i>
+            <span>Tủ Thuốc</span>
+        </a>
+        <a href="settings.html" class="nav-item">
+            <i class="fa-regular fa-user"></i>
+            <span>Cá Nhân</span>
+        </a>
+    </nav>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>

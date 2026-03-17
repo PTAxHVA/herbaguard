@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HerbaGuard - Quét Tương Tác Thuốc</title>
-    
+    <title>HerbaGuard - Kiểm Tra Tương Tác</title>
+
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="check.css">
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -22,8 +22,9 @@
 
             <div class="desktop-menu">
                 <a href="index.html">Trang Chủ</a>
-                <a href="check.html" class="active">Quét Thuốc</a>
+                <a href="check.html" class="active">Kiểm Tra Tương Tác</a>
                 <a href="medicines.html">Tủ Thuốc</a>
+                <a href="chat.html">Trợ Lý AI</a>
             </div>
 
             <div class="user-group">
@@ -32,7 +33,7 @@
                     <span class="notification-dot"></span>
                 </button>
                 <a href="settings.html">
-                    <img  src="https://ui-avatars.com/api/?name=Louis&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
+                    <img src="https://ui-avatars.com/api/?name=Louis&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
                 </a>
                 <div class="user-info">
                     <p id="greeting-text">Xin chào,</p>
@@ -43,65 +44,57 @@
     </nav>
 
     <main class="main-content">
-        
+
         <div class="page-header">
-            <h1>Thêm Thuốc Cần Kiểm Tra</h1>
-            <p>Hệ thống AI sẽ phân tích tương tác giữa các loại thuốc bạn chọn.</p>
+            <h1>Kiểm Tra Thuốc Tây Và Thảo Dược</h1>
+            <p>Nhập tối thiểu 2 mục để hệ thống đối chiếu tương tác từ cơ sở dữ liệu nội bộ.</p>
         </div>
 
         <div class="scanner-card">
             <div class="scanner-inner">
                 <div class="scanner-icon"><i class="fa-solid fa-camera"></i></div>
-                <h3>Quét Vỏ Hộp Thuốc (OCR)</h3>
-                <p>Chụp ảnh hoặc tải lên hình ảnh đơn thuốc</p>
+                <h3>Quét Ảnh (Tùy Chọn)</h3>
+                <p>Tính năng OCR đang được hoàn thiện. Demo hiện tại ưu tiên nhập thủ công để kiểm tra chính xác.</p>
             </div>
         </div>
 
         <div class="divider">
-            <span>Hoặc nhập thủ công</span>
+            <span>Nhập thủ công</span>
+        </div>
+
+        <div class="demo-chips-section">
+            <p>Thử nhanh:</p>
+            <div class="demo-chip-list" id="demoChipList">
+                <button class="demo-chip" type="button" data-item="warfarin">warfarin</button>
+                <button class="demo-chip" type="button" data-item="nhân sâm">nhân sâm</button>
+                <button class="demo-chip" type="button" data-item="aspirin">aspirin</button>
+                <button class="demo-chip" type="button" data-item="nghệ">nghệ</button>
+                <button class="demo-chip" type="button" data-item="ginkgo">ginkgo</button>
+            </div>
         </div>
 
         <div class="input-group">
             <div class="search-wrapper">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="medicineInput" placeholder="Nhập tên thuốc...">
-                <button class="btn-voice"><i class="fa-solid fa-microphone"></i></button>
+                <input type="text" id="medicineInput" placeholder="Nhập tên thuốc tây hoặc thảo dược..." autocomplete="off">
+                <button class="btn-voice" type="button" aria-label="Nhập giọng nói (sắp có)"><i class="fa-solid fa-microphone"></i></button>
+                <div id="searchSuggestions" class="suggestions hidden"></div>
             </div>
-            <button class="btn-primary" id="btnAddMedicine">Thêm</button>
+            <button class="btn-primary" id="btnAddMedicine" type="button">Thêm</button>
         </div>
+
+        <div id="apiError" class="api-error hidden"></div>
 
         <div class="medicine-section">
             <div class="section-header">
-                <h3>Thuốc đang chọn (<span id="medCount">2</span>)</h3>
-                <button class="btn-clear text-danger" id="btnClearAll">Xóa tất cả</button>
+                <h3>Mục đang chọn (<span id="medCount">0</span>)</h3>
+                <button class="btn-clear text-danger" id="btnClearAll" type="button">Xóa tất cả</button>
             </div>
-            
-            <div id="medicineList" class="medicine-list">
-                <div class="medicine-card">
-                    <div class="card-left">
-                        <div class="icon-box blue"><i class="fa-solid fa-capsules"></i></div>
-                        <div class="card-info">
-                            <h4>Paracetamol 500mg</h4>
-                            <p>Thêm thủ công</p>
-                        </div>
-                    </div>
-                    <button class="btn-remove"><i class="fa-solid fa-xmark"></i></button>
-                </div>
 
-                <div class="medicine-card">
-                    <div class="card-left">
-                        <div class="icon-box green"><i class="fa-solid fa-camera"></i></div>
-                        <div class="card-info">
-                            <h4>Aspirin 81mg</h4>
-                            <p>Quét từ camera (Độ tin cậy: 98%)</p>
-                        </div>
-                    </div>
-                    <button class="btn-remove"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-            </div>
+            <div id="medicineList" class="medicine-list"></div>
         </div>
 
-        <button class="btn-main-action mt-24" id="btnCheckInteraction">
+        <button class="btn-main-action mt-24" id="btnCheckInteraction" type="button">
             <i class="fa-solid fa-shield-virus"></i> KIỂM TRA TƯƠNG TÁC NGAY
         </button>
 
@@ -109,17 +102,18 @@
 
     <div id="loadingOverlay" class="loading-overlay hidden">
         <i class="fa-solid fa-circle-notch fa-spin"></i>
-        <h2>AI đang phân tích...</h2>
-        <p>Đang đối chiếu dữ liệu tương tác thuốc</p>
+        <h2>Đang phân tích tương tác</h2>
+        <p>Đang đối chiếu dữ liệu thuốc tây và thảo dược...</p>
     </div>
 
     <nav class="bottom-nav">
         <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i><span>Trang Chủ</span></a>
-        <a href="check.html" class="nav-item active"><i class="fa-solid fa-camera"></i><span>Quét</span></a>
+        <a href="check.html" class="nav-item active"><i class="fa-solid fa-camera"></i><span>Kiểm Tra</span></a>
         <a href="medicines.html" class="nav-item"><i class="fa-solid fa-pills"></i><span>Tủ Thuốc</span></a>
         <a href="settings.html" class="nav-item"><i class="fa-regular fa-user"></i><span>Cá Nhân</span></a>
     </nav>
 
+    <script src="api.js"></script>
     <script src="app.js"></script>
     <script src="check.js"></script>
 

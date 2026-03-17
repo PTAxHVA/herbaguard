@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HerbaGuard - Đăng Ký</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-card">
+            <div class="auth-logo">
+                <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+                <span class="logo-text">HerbaGuard</span>
+            </div>
+
+            <div class="auth-title">
+                <h1>Tạo tài khoản</h1>
+                <p>Đăng ký để lưu và dùng hệ thống kiểm tra tương tác</p>
+            </div>
+
+            <form id="registerForm" class="auth-form">
+                <div class="auth-field">
+                    <label for="fullName">Họ và tên</label>
+                    <input id="fullName" name="fullName" type="text" required minlength="2" placeholder="Nguyễn Văn A">
+                </div>
+
+                <div class="auth-field">
+                    <label for="email">Email</label>
+                    <input id="email" name="email" type="email" required placeholder="you@example.com">
+                </div>
+
+                <div class="auth-field">
+                    <label for="password">Mật khẩu</label>
+                    <input id="password" name="password" type="password" required minlength="6" placeholder="Ít nhất 6 ký tự">
+                </div>
+
+                <div class="auth-field">
+                    <label for="confirmPassword">Nhập lại mật khẩu</label>
+                    <input id="confirmPassword" name="confirmPassword" type="password" required minlength="6" placeholder="Nhập lại mật khẩu">
+                </div>
+
+                <div id="registerMessage" class="auth-message hidden"></div>
+
+                <button id="registerSubmit" class="auth-submit" type="submit">Đăng ký</button>
+            </form>
+
+            <p class="auth-footer">
+                Đã có tài khoản? <a href="login.html">Đăng nhập</a>
+            </p>
+        </section>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script src="auth.js"></script>
+</body>
+</html>

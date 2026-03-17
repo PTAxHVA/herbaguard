@@ -1,0 +1,200 @@
+.chat-layout {
+    max-width: 920px;
+    margin: 0 auto;
+}
+
+.chat-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.chat-header h1 {
+    font-size: 22px;
+    margin-bottom: 4px;
+}
+
+.chat-header p {
+    color: var(--slate-500);
+    font-size: 14px;
+}
+
+.quick-question-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.quick-question {
+    border: 1px solid var(--emerald-200);
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+    border-radius: 999px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.quick-question:hover {
+    background: var(--emerald-100);
+}
+
+.chat-log {
+    border: 1px solid var(--slate-200);
+    border-radius: 14px;
+    background: var(--slate-50);
+    padding: 12px;
+    min-height: 320px;
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.chat-message {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.chat-message.user {
+    justify-content: flex-end;
+}
+
+.chat-bubble {
+    max-width: 85%;
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.chat-message.user .chat-bubble {
+    background: var(--emerald-600);
+    color: var(--white);
+}
+
+.chat-message.assistant .chat-bubble {
+    background: var(--white);
+    color: var(--slate-800);
+    border: 1px solid var(--slate-200);
+}
+
+.chat-meta {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--slate-500);
+}
+
+.evidence-box {
+    margin-top: 8px;
+    border-top: 1px dashed var(--slate-200);
+    padding-top: 8px;
+    font-size: 12px;
+}
+
+.evidence-title {
+    font-weight: 700;
+    color: var(--slate-700);
+    margin-bottom: 4px;
+}
+
+.evidence-tag-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.evidence-tag {
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.evidence-tag.drug {
+    background: var(--blue-50);
+    color: var(--blue-500);
+}
+
+.evidence-tag.herb {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+.evidence-item {
+    margin-top: 6px;
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.evidence-item strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.citation-list {
+    margin-top: 6px;
+    color: var(--slate-500);
+}
+
+.chat-compose {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.chat-compose textarea {
+    flex: 1;
+    border: 1px solid var(--slate-300);
+    border-radius: 12px;
+    min-height: 56px;
+    max-height: 120px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.chat-compose textarea:focus {
+    outline: none;
+    border-color: var(--emerald-500);
+    box-shadow: 0 0 0 2px var(--emerald-100);
+}
+
+.chat-compose .btn-primary {
+    min-width: 120px;
+}
+
+.typing-indicator {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--slate-500);
+}
+
+@media (max-width: 640px) {
+    .chat-compose {
+        flex-direction: column;
+    }
+
+    .chat-compose .btn-primary {
+        width: 100%;
+    }
+
+    .chat-bubble {
+        max-width: 100%;
+    }
+}

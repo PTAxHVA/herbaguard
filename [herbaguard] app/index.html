@@ -6,13 +6,12 @@
     <title>HerbaGuard - Trang Chủ</title>
 
     <link rel="stylesheet" href="styles.css">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-      <nav class="top-navbar">
+    <nav class="top-navbar">
         <div class="nav-container">
             <div class="logo-group" id="nav-logo">
                 <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
@@ -21,92 +20,73 @@
 
             <div class="desktop-menu">
                 <a href="index.html" class="active">Trang Chủ</a>
-                <a href="check.html">Quét Thuốc</a>
+                <a href="check.html">Kiểm Tra Tương Tác</a>
                 <a href="medicines.html">Tủ Thuốc</a>
+                <a href="chat.html">Trợ Lý AI</a>
             </div>
 
             <div class="user-group">
-                <button class="btn-icon" id="btn-notification">
+                <button class="btn-icon" id="btn-notification" title="Thông báo mới">
                     <i class="fa-regular fa-bell"></i>
                     <span class="notification-dot"></span>
                 </button>
                 <a href="settings.html">
-                    <img  src="https://ui-avatars.com/api/?name=Louis&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
+                    <img src="https://ui-avatars.com/api/?name=User&background=10B981&color=fff" alt="Avatar" class="avatar" id="nav-avatar" style="cursor: pointer;">
                 </a>
                 <div class="user-info">
                     <p id="greeting-text">Xin chào,</p>
-                    <p>Louis Tran</p>
+                    <p>Người dùng</p>
                 </div>
             </div>
         </div>
     </nav>
 
     <main class="main-content">
-        
-        <div class="hero-camera-action" onclick="window.location.href='check.html'">
+
+        <div class="hero-camera-action" id="heroCheckAction" role="button" tabindex="0" aria-label="Mở trang kiểm tra tương tác">
             <div class="camera-viewfinder">
                 <div class="scan-line"></div>
                 <i class="fa-solid fa-camera camera-icon-main"></i>
             </div>
-            <h2>Chạm Để Quét Thuốc</h2>
-            <p>Hệ thống AI sẽ tự động đọc tên thuốc và phân tích tương tác từ ảnh chụp vỏ hộp hoặc đơn thuốc của bạn.</p>
+            <h2>Chạm Để Kiểm Tra Tương Tác</h2>
+            <p>Nhập thuốc tây và thảo dược để hệ thống đối chiếu tương tác từ cơ sở dữ liệu cục bộ.</p>
         </div>
 
-        <div class="smart-alerts-section">
+        <div class="quick-action-row">
+            <button class="btn-primary quick-btn" id="btnQuickCheck" type="button">
+                <i class="fa-solid fa-shield-virus"></i> Kiểm tra ngay
+            </button>
+            <button class="btn-primary quick-btn quick-btn-secondary" id="btnQuickChat" data-open-chat="true" type="button">
+                <i class="fa-solid fa-comments"></i> Hỏi trợ lý AI
+            </button>
+        </div>
+
+        <section class="smart-alerts-section">
             <div class="section-header">
-                <h3 style="font-size: 16px; font-weight: 700; color: var(--slate-600); text-transform: uppercase;">
-                    <i class="fa-solid fa-sparkles" style="color: var(--amber-500);"></i> Thông báo
+                <h3 class="section-title">
+                    <i class="fa-solid fa-sparkles" style="color: var(--amber-500);"></i> Cảnh báo của bạn
                 </h3>
+                <button class="text-link" id="btnRefreshDashboard" type="button">Làm mới</button>
             </div>
-            
-            <div class="alert-box warning">
-                <div class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                <div class="alert-content">
-                    <h4>Sắp hết Paracetamol!</h4>
-                    <p>Tủ thuốc của bạn chỉ còn <strong>2 viên</strong>. Hãy nhờ người nhà mua thêm nhé.</p>
-                </div>
-                <button class="btn-action-small">Nhắc con</button>
-            </div>
+            <div id="dashboardError" class="status-message error hidden"></div>
+            <div id="dashboardAlerts" class="medicine-list"></div>
+        </section>
 
-            <div class="alert-box info">
-                <div class="alert-icon"><i class="fa-solid fa-leaf"></i></div>
-                <div class="alert-content">
-                    <h4>Lưu ý dùng thảo dược</h4>
-                    <p>Bạn đang dùng thuốc tiểu đường. Tránh uống cùng lúc với <strong>trà Nhân sâm</strong> để không làm hạ đường huyết quá mức.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="medicine-section">
+        <section class="medicine-section">
             <div class="section-header">
-                <h2>Lịch Uống Thuốc Hôm Nay</h2>
-                <button class="text-link" id="btn-view-all-meds">Xem toàn bộ <i class="fa-solid fa-arrow-right"></i></button>
+                <h2>Lịch Nhắc Sắp Tới</h2>
+                <button class="text-link" id="btn-view-all-meds" type="button">Xem tủ thuốc <i class="fa-solid fa-arrow-right"></i></button>
             </div>
+            <div id="upcomingReminderList" class="medicine-list"></div>
+        </section>
 
-            <div class="medicine-list">
-                <div class="medicine-card">
-                    <div class="card-left">
-                        <div class="icon-box blue"><i class="fa-regular fa-clock"></i></div>
-                        <div class="card-info">
-                            <h4>Paracetamol 500mg</h4>
-                            <p>1 viên • Sau bữa ăn sáng</p>
-                        </div>
-                    </div>
-                    <span class="card-time">08:00 AM</span>
-                </div>
-
-                <div class="medicine-card">
-                    <div class="card-left">
-                        <div class="icon-box green"><i class="fa-solid fa-capsules"></i></div>
-                        <div class="card-info">
-                            <h4>Amoxicillin 250mg</h4>
-                            <p>2 viên • Uống với nhiều nước</p>
-                        </div>
-                    </div>
-                    <span class="card-time">12:30 PM</span>
-                </div>
+        <section class="medicine-section" style="margin-top: 20px;">
+            <div class="section-header">
+                <h2>Lịch Sử Kiểm Tra Gần Đây</h2>
+                <a href="check.html" class="text-link">Kiểm tra mới <i class="fa-solid fa-arrow-right"></i></a>
             </div>
-        </div>
+            <div id="recentCheckList" class="medicine-list"></div>
+        </section>
 
     </main>
 
@@ -117,7 +97,7 @@
         </a>
         <a href="check.html" class="nav-item">
             <i class="fa-solid fa-camera"></i>
-            <span>Quét</span>
+            <span>Kiểm Tra</span>
         </a>
         <a href="medicines.html" class="nav-item">
             <i class="fa-solid fa-pills"></i>
@@ -129,6 +109,8 @@
         </a>
     </nav>
 
+    <script src="api.js"></script>
     <script src="app.js"></script>
+    <script src="index.js"></script>
 </body>
 </html>

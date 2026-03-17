@@ -163,6 +163,23 @@ body {
     color: var(--white);
 }
 
+.alert-box.danger-soft {
+    background: var(--red-50);
+    border: 1px solid var(--red-100);
+}
+
+.alert-box.danger-soft .alert-icon {
+    color: var(--red-500);
+    background: var(--white);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
 /* ===== 7. COMPONENT: CAMERA OCR (Dùng ở trang Check) ===== */
 .scanner-card { background: var(--white); border-radius: 24px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--slate-100); margin-bottom: 24px; cursor: pointer; transition: box-shadow 0.2s; }
 .scanner-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -190,10 +207,33 @@ body {
 .btn-main-action { width: 100%; background: linear-gradient(to right, var(--emerald-500), var(--teal-600)); color: var(--white); border: none; border-radius: 16px; padding: 20px; font-size: 18px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); transition: all 0.2s; }
 .btn-main-action:hover { filter: brightness(1.1); transform: translateY(-2px);}
 
+.quick-action-row {
+    margin: 0 0 20px 0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.quick-btn {
+    flex: 1;
+    min-width: 210px;
+}
+
+.quick-btn-secondary {
+    background: var(--white);
+    color: var(--emerald-700);
+    border: 1px solid var(--emerald-300);
+}
+
+.quick-btn-secondary:hover {
+    background: var(--emerald-50);
+}
+
 /* ===== 9. COMPONENT: DANH SÁCH THUỐC (MEDICINE LIST) ===== */
 .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
 .section-header h2 { font-size: 20px; font-weight: 700; }
 .section-header h3 { font-size: 18px; font-weight: 700; }
+.section-title { font-size: 16px; font-weight: 700; color: var(--slate-600); text-transform: uppercase; }
 .text-link { color: var(--emerald-600); font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; border: none; background: none;}
 .text-link:hover { text-decoration: underline; }
 .text-danger { color: var(--red-500); }
@@ -207,6 +247,53 @@ body {
 .card-info h4 { font-size: 15px; font-weight: 700; }
 .card-info p { font-size: 12px; color: var(--slate-500); margin-top: 2px; }
 .card-time { font-size: 14px; font-weight: 700; color: var(--emerald-600); background: var(--emerald-50); padding: 6px 12px; border-radius: 8px;}
+
+.dashboard-right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.muted-text {
+    font-size: 12px;
+    color: var(--slate-500);
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.status-pill.success {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+.status-pill.warning {
+    background: var(--amber-50);
+    color: #b45309;
+}
+
+.status-pill.danger {
+    background: var(--red-50);
+    color: var(--red-600);
+}
+
+.status-pill.safe {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+}
+
+.status-pill.muted {
+    background: var(--slate-100);
+    color: var(--slate-600);
+}
 
 .btn-remove { width: 40px; height: 40px; background: var(--red-50); color: var(--red-500); border: none; border-radius: 12px; font-size: 18px; cursor: pointer; transition: all 0.2s; }
 .btn-remove:hover { background: var(--red-500); color: var(--white); }
@@ -223,6 +310,45 @@ body {
 .loading-overlay h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 .loading-overlay p { color: var(--slate-300); font-size: 14px; }
 
+.status-message {
+    margin-top: 10px;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+.status-message.success {
+    background: var(--emerald-50);
+    border: 1px solid var(--emerald-200);
+    color: var(--emerald-700);
+}
+
+.status-message.error {
+    background: var(--red-50);
+    border: 1px solid var(--red-100);
+    color: var(--red-600);
+}
+
+.status-message.warning {
+    background: var(--amber-50);
+    border: 1px solid #fcd34d;
+    color: #b45309;
+}
+
+.empty-state {
+    background: var(--white);
+    border: 1px dashed var(--slate-300);
+    color: var(--slate-500);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.hidden {
+    display: none !important;
+}
+
 /* ===== 11. THANH ĐIỀU HƯỚNG DƯỚI CÙNG (BOTTOM NAV) ===== */
 .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--white); border-top: 1px solid var(--slate-200); display: flex; justify-content: space-around; padding: 12px 8px; z-index: 40; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.05); }
 .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--slate-400); text-decoration: none; transition: color 0.2s; width: 64px;}
@@ -231,6 +357,67 @@ body {
 .nav-item.active { color: var(--emerald-600); }
 .nav-item.active span { font-weight: 700; }
 .nav-item:hover { color: var(--emerald-600); }
+
+body.large-text {
+    font-size: 18px;
+}
+
+body.large-text p,
+body.large-text span,
+body.large-text a,
+body.large-text button,
+body.large-text input,
+body.large-text select,
+body.large-text textarea,
+body.large-text label,
+body.large-text li {
+    font-size: 1.05em;
+}
+
+body.theme-dark {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+body.theme-dark .top-navbar,
+body.theme-dark .bottom-nav,
+body.theme-dark .medicine-card,
+body.theme-dark .panel-card,
+body.theme-dark .alert-box,
+body.theme-dark .chat-card,
+body.theme-dark .settings-card,
+body.theme-dark .profile-card,
+body.theme-dark .details-box,
+body.theme-dark .auth-card {
+    background: #1e293b !important;
+    color: #e2e8f0;
+    border-color: #334155 !important;
+}
+
+body.theme-dark .card-info p,
+body.theme-dark .page-header p,
+body.theme-dark .muted-text,
+body.theme-dark .alert-content p,
+body.theme-dark .user-info p:first-child {
+    color: #94a3b8 !important;
+}
+
+body.theme-dark .desktop-menu a {
+    color: #cbd5e1;
+}
+
+body.theme-dark .desktop-menu a.active {
+    color: #34d399;
+    border-color: #34d399;
+}
+
+body.theme-dark .search-wrapper input,
+body.theme-dark .input-control,
+body.theme-dark .chat-compose textarea {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-color: #475569;
+}
 
 /* ===== 12. RESPONSIVE CHO MÁY TÍNH (DESKTOP) ===== */
 @media (min-width: 768px) {

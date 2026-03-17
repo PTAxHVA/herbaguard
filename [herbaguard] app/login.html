@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HerbaGuard - Đăng Nhập</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-card">
+            <div class="auth-logo">
+                <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+                <span class="logo-text">HerbaGuard</span>
+            </div>
+
+            <div class="auth-title">
+                <h1>Đăng nhập</h1>
+                <p>Truy cập hệ thống kiểm tra tương tác thuốc tây và thảo dược</p>
+            </div>
+
+            <form id="loginForm" class="auth-form">
+                <div class="auth-field">
+                    <label for="email">Email</label>
+                    <input id="email" name="email" type="email" required placeholder="you@example.com">
+                </div>
+
+                <div class="auth-field">
+                    <label for="password">Mật khẩu</label>
+                    <input id="password" name="password" type="password" required minlength="6" placeholder="Nhập mật khẩu">
+                </div>
+
+                <div id="loginMessage" class="auth-message hidden"></div>
+
+                <button id="loginSubmit" class="auth-submit" type="submit">Đăng nhập</button>
+            </form>
+
+            <p class="auth-footer">
+                Chưa có tài khoản? <a href="register.html">Đăng ký ngay</a>
+            </p>
+        </section>
+    </main>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script src="auth.js"></script>
+</body>
+</html>

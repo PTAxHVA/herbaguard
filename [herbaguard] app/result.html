@@ -6,36 +6,63 @@
     <title>HerbaGuard - Kết Quả Tương Tác</title>
 
     <link rel="stylesheet" href="styles.css">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        .alert-card { border-radius: 24px; padding: 32px 24px; text-align: center; margin-bottom: 24px; color: var(--white); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
+        .alert-card { border-radius: 24px; padding: 28px 24px; text-align: center; margin-bottom: 24px; color: var(--white); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
         .alert-card.danger { background: linear-gradient(135deg, var(--red-500), #b91c1c); }
         .alert-card.warning { background: linear-gradient(135deg, var(--amber-500), #b45309); }
         .alert-card.safe { background: linear-gradient(135deg, var(--emerald-500), var(--teal-600)); }
-        
-        .alert-icon { font-size: 64px; margin-bottom: 16px; animation: pulse-alert 1.5s infinite; }
-        .alert-card h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
-        .alert-card p { font-size: 16px; opacity: 0.9; }
 
-        .details-box { background: var(--white); border-radius: 20px; padding: 24px; border: 1px solid var(--slate-200); margin-bottom: 24px; }
-        .details-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--slate-800); }
+        .alert-icon { font-size: 56px; margin-bottom: 12px; }
+        .alert-card h2 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+        .alert-card p { font-size: 15px; opacity: 0.95; line-height: 1.5; }
+
+        .details-box { background: var(--white); border-radius: 20px; padding: 20px; border: 1px solid var(--slate-200); margin-bottom: 20px; }
+        .details-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; color: var(--slate-800); }
         .details-box p { font-size: 15px; color: var(--slate-600); line-height: 1.6; }
 
-        .btn-danger-outline { border: 2px solid var(--red-500); color: var(--red-600); background: transparent; border-radius: 16px; padding: 16px 24px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; transition: all 0.2s; }
-        .btn-danger-outline:hover { background: var(--red-50); }
-        .btn-danger-filled { background: var(--red-500); color: var(--white); border: none; border-radius: 16px; padding: 16px 24px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: all 0.2s; }
-        .btn-danger-filled:hover { background: var(--red-600); }
-        
-        .action-group { display: flex; gap: 12px; margin-top: 24px; }
-        @media (max-width: 640px) { .action-group { flex-direction: column; } }
+        .type-badge { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 4px 8px; display: inline-flex; align-items: center; }
+        .type-badge.drug { background: var(--blue-50); color: var(--blue-500); }
+        .type-badge.herb { background: var(--emerald-50); color: var(--emerald-700); }
 
-        @keyframes pulse-alert {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        .severity-tag { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 4px 10px; display: inline-flex; align-items: center; }
+        .severity-tag.high { color: var(--red-600); background: var(--red-50); }
+        .severity-tag.medium { color: #b45309; background: var(--amber-50); }
+
+        .pair-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+        .pair-header h3 { margin: 0; font-size: 16px; color: var(--slate-800); }
+
+        .bullet-list { margin: 8px 0 0 18px; color: var(--slate-600); }
+        .bullet-list li { margin-bottom: 6px; }
+
+        .action-group { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+        .btn-outline { border: 2px solid var(--slate-300); color: var(--slate-700); background: var(--white); border-radius: 16px; padding: 12px 16px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 180px; transition: all 0.2s; }
+        .btn-outline:hover { background: var(--slate-50); }
+
+        .empty-placeholder { color: var(--slate-500); font-size: 14px; text-align: center; padding: 12px; }
+
+        .hidden { display: none !important; }
+        @media (max-width: 640px) { .action-group { flex-direction: column; } }
+        @media print {
+            .top-navbar,
+            .action-group,
+            #btnShareTop {
+                display: none !important;
+            }
+            body {
+                padding-bottom: 0;
+                background: #fff;
+            }
+            .main-content {
+                padding: 0 !important;
+            }
+            .details-box,
+            .alert-card {
+                box-shadow: none !important;
+                border: 1px solid #ddd;
+            }
         }
     </style>
 </head>
@@ -43,79 +70,65 @@
 
     <nav class="top-navbar">
         <div class="nav-container">
-            <div class="logo-group" onclick="window.location.href='index.html'">
+            <div class="logo-group" onclick="window.location.href='check.html'">
                 <button class="btn-icon" style="margin-right: 8px; color: var(--slate-800);"><i class="fa-solid fa-arrow-left"></i></button>
                 <span class="logo-text">Kết Quả Phân Tích</span>
             </div>
-            
+
             <div class="user-group">
-                <button class="btn-icon">
+                <button id="btnShareTop" class="btn-icon" title="Chia sẻ kết quả">
                     <i class="fa-solid fa-share-nodes"></i>
                 </button>
             </div>
         </div>
     </nav>
 
-    <main class="main-content" style="max-width: 768px;">
-        
-        <div class="alert-card danger">
-            <div class="alert-icon">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h2>NGUY HIỂM CAO</h2>
-            <p>Tuyệt đối không sử dụng chung các loại thuốc này!</p>
+    <main class="main-content" style="max-width: 860px;">
+
+        <div id="alertCard" class="alert-card safe">
+            <div class="alert-icon" id="alertIcon"><i class="fa-solid fa-circle-check"></i></div>
+            <h2 id="alertTitle">ĐANG TẢI KẾT QUẢ</h2>
+            <p id="alertMessage">Đang lấy dữ liệu phân tích...</p>
+            <p id="alertRecommendation" style="margin-top: 10px; font-weight: 600;"></p>
         </div>
 
         <div class="medicine-section">
-            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--slate-500); text-transform: uppercase;">Thuốc được phân tích</h3>
-            <div class="medicine-list">
-                <div class="medicine-card" style="border-left: 4px solid var(--red-500);">
-                    <div class="card-left">
-                        <div class="icon-box" style="background: var(--slate-100); color: var(--slate-500);"><i class="fa-solid fa-capsules"></i></div>
-                        <div class="card-info">
-                            <h4 style="font-size: 16px;">Warfarin 5mg</h4>
-                            <p>Thuốc chống đông máu</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="medicine-card" style="border-left: 4px solid var(--red-500);">
-                    <div class="card-left">
-                        <div class="icon-box" style="background: var(--slate-100); color: var(--slate-500);"><i class="fa-solid fa-pills"></i></div>
-                        <div class="card-info">
-                            <h4 style="font-size: 16px;">Aspirin 81mg</h4>
-                            <p>Thuốc giảm đau, kháng viêm</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--slate-500); text-transform: uppercase;">Mục đã phân tích</h3>
+            <div id="resolvedList" class="medicine-list"></div>
         </div>
 
-        <div class="details-box">
-            <h3>Tại sao lại nguy hiểm?</h3>
-            <p>
-                Cả <strong>Warfarin</strong> và <strong>Aspirin</strong> đều có tác dụng làm loãng máu. Khi uống chung, chúng sẽ làm tăng tác dụng này lên gấp nhiều lần.
-                <br><br>
-                <strong>Hậu quả:</strong> Điều này có thể dẫn đến nguy cơ chảy máu trong (xuất huyết) rất nghiêm trọng, khó cầm máu ngay cả với những vết thương nhỏ.
-            </p>
+        <div id="unresolvedBox" class="details-box hidden">
+            <h3>Không nhận diện được</h3>
+            <p>Một số mục chưa khớp trong cơ sở dữ liệu. Bạn có thể thử nhập lại đúng tên hoạt chất hoặc tên thảo dược phổ biến.</p>
+            <ul id="unresolvedList" class="bullet-list"></ul>
+        </div>
+
+        <div id="pairContainer"></div>
+
+        <div id="safeState" class="details-box hidden">
+            <h3>Không tìm thấy cặp tương tác trong dữ liệu</h3>
+            <p>Chưa ghi nhận tương tác giữa các cặp thuốc tây và thảo dược đã nhận diện.</p>
         </div>
 
         <div class="action-group">
-            <button class="btn-danger-outline">
-                <i class="fa-solid fa-file-medical"></i> Xem Chi Tiết Y Khoa
+            <button id="btnRecheck" class="btn-outline" type="button">
+                <i class="fa-solid fa-rotate-left"></i> Kiểm tra lại
             </button>
-            <button class="btn-danger-filled">
-                <i class="fa-solid fa-phone-volume"></i> Gọi Bác Sĩ Ngay
+            <button id="btnShare" class="btn-outline" type="button">
+                <i class="fa-solid fa-share-nodes"></i> Chia sẻ
             </button>
-        </div>
-
-        <div style="margin-top: 32px; text-align: center;">
-            <button class="text-link" onclick="window.location.href='check.html'" style="color: var(--slate-500);">
-                <i class="fa-solid fa-rotate-left"></i> Quét lại thuốc khác
+            <button id="btnExportPdf" class="btn-outline" type="button">
+                <i class="fa-solid fa-file-pdf"></i> Xuất PDF
+            </button>
+            <button id="btnAskChat" class="btn-outline" type="button">
+                <i class="fa-solid fa-comments"></i> Hỏi Trợ Lý AI
             </button>
         </div>
 
     </main>
+
+    <script src="api.js"></script>
     <script src="app.js"></script>
+    <script src="result.js"></script>
 </body>
 </html>
