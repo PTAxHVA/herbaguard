@@ -52,6 +52,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
+    function renderTextToHtml(value) {
+        return escapeHtml(value).replace(/\n/g, "<br>");
+    }
+
     function getCacheKey() {
         if (!state.sessionId) {
             return `${CHAT_STORAGE_PREFIX}default`;
@@ -61,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     function saveHistoryCache() {
         try {
-            sessionStorage.setItem(getCacheKey(), JSON.stringify(state.messages.slice(-80)));
+            sessionStorage.setItem(getCacheKey(), JSON.stringify(state.messages.slice(-120)));
         } catch (error) {
             // Ignore storage failures.
         }
@@ -96,55 +100,122 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    function buildEvidenceHtml(message) {
+    function autoResizeInput() {
+        if (!chatInput) {
+            return;
+        }
+        chatInput.style.height = "auto";
+        chatInput.style.height = `${Math.min(chatInput.scrollHeight, 140)}px`;
+    }
+
+    function createElement(tag, className, textValue) {
+        const node = document.createElement(tag);
+        if (className) {
+            node.className = className;
+        }
+        if (typeof textValue === "string") {
+            node.textContent = textValue;
+        }
+        return node;
+    }
+
+    function createEvidenceCard(message) {
         const grounding = message.grounding || {};
         const entities = Array.isArray(grounding.entities) ? grounding.entities : [];
         const interactions = Array.isArray(grounding.interactions) ? grounding.interactions : [];
         const citations = Array.isArray(message.citations) ? message.citations : [];
 
         if (entities.length === 0 && interactions.length === 0 && citations.length === 0) {
-            return "";
+            return null;
         }
 
-        const entityHtml = entities.length
-            ? `
-                <div class="evidence-title">Thực thể nhận diện</div>
-                <div class="evidence-tag-wrap">
-                    ${entities
-                        .map(
-                            (item) =>
-                                `<span class="evidence-tag ${escapeHtml(item.type)}">${escapeHtml(item.name)} (${item.type === "drug" ? "Thuốc Tây" : "Thảo Dược"})</span>`
-                        )
-                        .join("")}
-                </div>
-              `
-            : "";
+        const card = createElement("div", "evidence-card");
 
-        const interactionHtml = interactions.length
-            ? `
-                <div class="evidence-title" style="margin-top: 8px;">Bằng chứng tương tác</div>
-                ${interactions
-                    .slice(0, 3)
-                    .map((item) => {
-                        const consequences = Array.isArray(item.possible_consequences) ? item.possible_consequences : [];
-                        return `
-                            <div class="evidence-item">
-                                <strong>${escapeHtml(item.drug_name || `drug_id=${item.drug_id}`)} + ${escapeHtml(item.herb_name || `herb_id=${item.herb_id}`)} • mức ${item.severity === "high" ? "cao" : "theo dõi"}</strong>
-                                <div><em>Cơ chế:</em> ${escapeHtml(item.mechanism || "")}</div>
-                                <div><em>Hậu quả:</em> ${escapeHtml(consequences.join("; ") || "Không có")}</div>
-                                <div><em>Khuyến nghị:</em> ${escapeHtml(item.recommendation || "")}</div>
-                            </div>
-                        `;
-                    })
-                    .join("")}
-              `
-            : "";
+        if (entities.length > 0) {
+            const section = createElement("div", "evidence-section");
+            section.appendChild(createElement("div", "evidence-title", "Thực thể nhận diện"));
 
-        const citationHtml = citations.length
-            ? `<div class="citation-list">Nguồn: ${citations.map((item) => escapeHtml(item)).join(" • ")}</div>`
-            : "";
+            const chipWrap = createElement("div", "evidence-chip-wrap");
+            entities.forEach((item) => {
+                const type = item && item.type === "drug" ? "drug" : "herb";
+                const label = type === "drug" ? "Thuốc Tây" : "Thảo dược";
+                const chip = createElement("span", `evidence-chip ${type}`);
+                chip.textContent = `${String(item.name || "")}`.trim() + ` (${label})`;
+                chipWrap.appendChild(chip);
+            });
+            section.appendChild(chipWrap);
+            card.appendChild(section);
+        }
 
-        return `<div class="evidence-box">${entityHtml}${interactionHtml}${citationHtml}</div>`;
+        if (interactions.length > 0) {
+            const section = createElement("div", "evidence-section");
+            section.appendChild(createElement("div", "evidence-title", "Bằng chứng tương tác"));
+
+            interactions.slice(0, 3).forEach((item) => {
+                const evidenceItem = createElement("div", "evidence-item");
+                const pairLine = createElement(
+                    "div",
+                    "pair-line",
+                    `${item.drug_name || `drug_id=${item.drug_id}`} + ${item.herb_name || `herb_id=${item.herb_id}`} • mức ${item.severity === "high" ? "cao" : "theo dõi"}`
+                );
+                evidenceItem.appendChild(pairLine);
+
+                const mechanism = createElement("div", "detail-line", `Cơ chế: ${item.mechanism || "Chưa có"}`);
+                evidenceItem.appendChild(mechanism);
+
+                const consequenceList = Array.isArray(item.possible_consequences) ? item.possible_consequences : [];
+                const consequences = consequenceList.length ? consequenceList.join("; ") : "Chưa có";
+                const consequenceLine = createElement("div", "detail-line", `Hậu quả: ${consequences}`);
+                evidenceItem.appendChild(consequenceLine);
+
+                const recommendation = createElement("div", "detail-line", `Khuyến nghị: ${item.recommendation || "Chưa có"}`);
+                evidenceItem.appendChild(recommendation);
+
+                section.appendChild(evidenceItem);
+            });
+
+            card.appendChild(section);
+        }
+
+        if (citations.length > 0) {
+            const section = createElement("div", "evidence-section");
+            section.appendChild(createElement("div", "evidence-title", "Nguồn dữ liệu"));
+            section.appendChild(createElement("div", "citation-line", citations.map((item) => String(item)).join(" • ")));
+            card.appendChild(section);
+        }
+
+        return card;
+    }
+
+    function createMessageNode(message) {
+        const role = message.role === "assistant" ? "assistant" : "user";
+
+        const row = createElement("div", `chat-message ${role}`);
+        const stack = createElement("div", "message-stack");
+
+        const bubble = createElement("div", "chat-bubble");
+        bubble.innerHTML = renderTextToHtml(String(message.content || ""));
+        stack.appendChild(bubble);
+
+        const time = createElement("div", "chat-time", String(message.time || ""));
+        stack.appendChild(time);
+
+        if (role === "assistant") {
+            const evidenceCard = createEvidenceCard(message);
+            if (evidenceCard) {
+                stack.appendChild(evidenceCard);
+            }
+        }
+
+        row.appendChild(stack);
+        return row;
+    }
+
+    function scrollToBottom() {
+        if (!chatLog) {
+            return;
+        }
+        chatLog.scrollTop = chatLog.scrollHeight;
     }
 
     function renderMessages() {
@@ -152,31 +223,21 @@ document.addEventListener("DOMContentLoaded", async function () {
             return;
         }
 
+        chatLog.innerHTML = "";
+
         if (state.messages.length === 0) {
-            chatLog.innerHTML = `
-                <div class="empty-state">
-                    Bắt đầu bằng câu hỏi như: "Nhân sâm có tương tác với warfarin không?"
-                </div>
-            `;
+            const empty = createElement("div", "empty-state");
+            empty.textContent = "Bắt đầu bằng câu hỏi như: \"warfarin với nhân sâm có tương tác không?\"";
+            chatLog.appendChild(empty);
             return;
         }
 
-        chatLog.innerHTML = state.messages
-            .map((message) => {
-                const evidenceHtml = message.role === "assistant" ? buildEvidenceHtml(message) : "";
-                return `
-                    <div class="chat-message ${escapeHtml(message.role)}">
-                        <div class="chat-bubble">
-                            ${escapeHtml(message.content)}
-                            ${evidenceHtml}
-                            <div class="chat-meta">${escapeHtml(message.time || "")}</div>
-                        </div>
-                    </div>
-                `;
-            })
-            .join("");
-
-        chatLog.scrollTop = chatLog.scrollHeight;
+        const fragment = document.createDocumentFragment();
+        state.messages.forEach((message) => {
+            fragment.appendChild(createMessageNode(message));
+        });
+        chatLog.appendChild(fragment);
+        scrollToBottom();
     }
 
     function appendMessage(payload) {
@@ -237,6 +298,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         if (chatInput) {
             chatInput.value = "";
+            autoResizeInput();
         }
 
         setSending(true);
@@ -256,9 +318,9 @@ document.addEventListener("DOMContentLoaded", async function () {
             appendMessage({
                 role: "assistant",
                 content: response.answer || "Không có phản hồi.",
-                time: nowLabel(),
+                time: formatTime(response.created_at),
                 grounding: response.grounding || {},
-                citations: response.citations || [],
+                citations: Array.isArray(response.citations) ? response.citations : [],
                 fallback: !!response.fallback,
             });
         } catch (error) {
@@ -329,6 +391,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                 sendMessage(chatInput.value);
             }
         });
+        chatInput.addEventListener("input", autoResizeInput);
+        autoResizeInput();
     }
 
     if (quickQuestionRow) {

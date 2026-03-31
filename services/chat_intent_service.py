@@ -37,6 +37,11 @@ class ChatIntentService:
         "uong cung",
         "co anh huong",
         "co nguy hiem",
+        "co sao khong",
+        "co sao ko",
+        "co sao",
+        "co on khong",
+        "co an toan khong",
     }
     _SIDE_EFFECT_KEYWORDS = {
         "tac dung phu",
@@ -45,6 +50,7 @@ class ChatIntentService:
         "anh huong gi",
         "co hai gi",
         "co gay gi",
+        "co tac hai gi",
     }
     _RECOMMENDATION_KEYWORDS = {
         "nen lam gi",
@@ -52,19 +58,28 @@ class ChatIntentService:
         "can lam gi",
         "xu ly",
         "co nen dung",
+        "nen xu ly sao",
     }
     _MECHANISM_KEYWORDS = {
         "co che",
         "tai sao",
         "vi sao",
         "nguyen nhan",
+        "tac dong nhu the nao",
+        "vi sao nguy hiem",
     }
-    _CLASSIFICATION_KEYWORDS = {
+    _ENTITY_IDENTIFICATION_KEYWORDS = {
         "la thuoc tay hay thao duoc",
         "la thuoc tay",
         "la thao duoc",
         "phan loai",
         "thuoc hay thao duoc",
+        "la loai gi",
+        "la gi",
+        "thuoc gi",
+        "thao duoc gi",
+        "co phai thao duoc khong",
+        "co phai thuoc tay khong",
     }
     _RELATED_KEYWORDS = {
         "goi y",
@@ -86,6 +101,13 @@ class ChatIntentService:
         "giai thich ngan gon hon",
         "ngan gon hon",
         "con thi sao",
+        "the con",
+        "the sao",
+    }
+    _PAIR_CONNECTOR_KEYWORDS = {
+        " voi ",
+        " va ",
+        " + ",
     }
 
     @staticmethod
@@ -105,13 +127,22 @@ class ChatIntentService:
                 return True
         return False
 
+    @staticmethod
+    def _contains_pair_connector(text_ascii: str) -> bool:
+        padded = f" {text_ascii} "
+        return any(keyword in padded for keyword in ChatIntentService._PAIR_CONNECTOR_KEYWORDS)
+
     def _is_follow_up(self, text_ascii: str, history: list[ChatHistoryMessage]) -> bool:
         if self._contains_any(text_ascii, self._FOLLOW_UP_MARKERS):
             return True
         if not history:
             return False
         token_count = len([token for token in text_ascii.split(" ") if token])
-        return 0 < token_count <= 4
+        if token_count <= 0:
+            return False
+        if token_count <= 5 and not self._contains_any(text_ascii, self._ENTITY_IDENTIFICATION_KEYWORDS):
+            return True
+        return False
 
     def detect_intents(self, message: str, history: list[ChatHistoryMessage]) -> IntentDetectionResult:
         text_ascii = normalize_ascii(message)
@@ -135,11 +166,15 @@ class ChatIntentService:
         if self._contains_any(text_ascii, self._MECHANISM_KEYWORDS):
             intents.add("ask_mechanism")
 
-        if self._contains_any(text_ascii, self._CLASSIFICATION_KEYWORDS):
+        if self._contains_any(text_ascii, self._ENTITY_IDENTIFICATION_KEYWORDS):
             intents.add("entity_classification")
+            intents.add("entity_identification")
 
         if self._contains_any(text_ascii, self._RELATED_KEYWORDS):
             intents.add("related_entities")
+
+        if self._contains_pair_connector(text_ascii):
+            intents.add("interaction_query")
 
         if self._is_follow_up(text_ascii, history):
             intents.add("follow_up")

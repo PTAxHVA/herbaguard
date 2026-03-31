@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from models import (
     ChatGrounding,
@@ -23,15 +23,28 @@ _CITATIONS = [
     "database/drug.json",
 ]
 
-_PRIMARY_INTENTS = {
+_PAIR_REQUIRED_INTENTS = {
     "interaction_query",
     "ask_side_effects",
     "ask_recommendation",
     "ask_mechanism",
-    "entity_classification",
-    "follow_up",
-    "related_entities",
 }
+
+_PAIR_HINT_KEYWORDS = {
+    "tuong tac",
+    "dung chung",
+    "uong cung",
+    "ket hop",
+}
+
+
+@dataclass
+class ResolutionState:
+    candidates: list[GraphEntity] = field(default_factory=list)
+    selected: list[GraphEntity] = field(default_factory=list)
+    ambiguous: dict[str, list[GraphEntity]] = field(default_factory=dict)
+    used_memory: bool = False
+    used_gemini: bool = False
 
 
 @dataclass(frozen=True)
@@ -40,12 +53,15 @@ class ResponsePlan:
     message: str
     message_ascii: str
     history: list[ChatHistoryMessage]
+    pair_hint: bool
+    candidates: list[GraphEntity]
     entities: list[GraphEntity]
+    ambiguous_options: dict[str, list[GraphEntity]]
     interactions: list[dict[str, object]]
-    entity_infos: list[dict[str, object]]
-    used_memory_for_entities: bool
     clarification_needed: bool
-    response_parts: dict[str, bool]
+    clarification_reason: str | None
+    used_memory_for_entities: bool
+    used_gemini_for_resolution: bool
 
     @property
     def interaction_found(self) -> bool:
@@ -93,6 +109,15 @@ class ChatService:
         return output
 
     @staticmethod
+    def _group_by_type(items: list[GraphEntity]) -> dict[str, list[GraphEntity]]:
+        grouped: dict[str, list[GraphEntity]] = {"drug": [], "herb": []}
+        for item in items:
+            grouped.setdefault(item.type, []).append(item)
+        for key in grouped:
+            grouped[key].sort(key=lambda row: (-row.confidence, row.name))
+        return grouped
+
+    @staticmethod
     def _as_grounding_entities(items: list[GraphEntity]) -> list[GroundingEntity]:
         return [GroundingEntity(type=item.type, id=item.id, name=item.name) for item in items]
 
@@ -120,14 +145,6 @@ class ChatService:
         return users[-limit:]
 
     @staticmethod
-    def _history_has_entities(history: list[ChatHistoryMessage]) -> bool:
-        return any(item.role == "user" and len(item.content.strip()) >= 3 for item in history)
-
-    @staticmethod
-    def _contains_any(text_ascii: str, keywords: set[str]) -> bool:
-        return any(keyword in text_ascii for keyword in keywords)
-
-    @staticmethod
     def _merge_histories(
         persisted: list[ChatHistoryMessage],
         client_history: list[ChatHistoryMessage],
@@ -145,8 +162,294 @@ class ChatService:
             merged.append(item)
         return merged[-limit:]
 
+    @staticmethod
+    def _is_pair_hint(message_ascii: str) -> bool:
+        padded = f" {message_ascii} "
+        if " + " in padded:
+            return True
+        if " voi " in padded or " va " in padded:
+            return True
+        return any(keyword in message_ascii for keyword in _PAIR_HINT_KEYWORDS)
+
+    @staticmethod
+    def _entity_label_vi(entity_type: str) -> str:
+        return "Thuốc Tây" if entity_type == "drug" else "Thảo dược"
+
+    @staticmethod
+    def _normalize_names(items: list[GraphEntity]) -> str:
+        chunks = [f"{item.name} ({ChatService._entity_label_vi(item.type)})" for item in items]
+        return ", ".join(chunks)
+
+    @staticmethod
+    def _has_both_types(items: list[GraphEntity]) -> bool:
+        has_drug = any(item.type == "drug" for item in items)
+        has_herb = any(item.type == "herb" for item in items)
+        return has_drug and has_herb
+
+    @staticmethod
+    def _pick_best_per_type(items: list[GraphEntity]) -> list[GraphEntity]:
+        best: dict[str, GraphEntity] = {}
+        for item in items:
+            current = best.get(item.type)
+            if current is None or item.confidence > current.confidence:
+                best[item.type] = item
+        output = list(best.values())
+        output.sort(key=lambda row: row.type)
+        return output
+
     def detect_intents(self, message: str, history: list[ChatHistoryMessage]) -> IntentDetectionResult:
         return self.intent_service.detect_intents(message, history)
+
+    def _extract_history_entities(self, history: list[ChatHistoryMessage]) -> list[GraphEntity]:
+        user_messages = self._recent_user_messages(history, limit=6)
+        if not user_messages:
+            return []
+
+        collected: list[GraphEntity] = []
+        for row in reversed(user_messages[-4:]):
+            collected.extend(self.graph.extract_entities(row.content, limit=8))
+
+        merged_text = " ".join(item.content for item in user_messages[-4:])
+        if merged_text.strip():
+            collected.extend(self.graph.extract_entities(merged_text, limit=8))
+
+        return self._deduplicate_entities(collected)
+
+    def _should_use_history(
+        self,
+        *,
+        intents: set[str],
+        message_ascii: str,
+        current_candidates: list[GraphEntity],
+        history: list[ChatHistoryMessage],
+        pair_hint: bool,
+    ) -> bool:
+        if not history:
+            return False
+
+        if "follow_up" in intents:
+            return True
+
+        has_pair = self._has_both_types(current_candidates)
+        token_count = len([token for token in message_ascii.split(" ") if token])
+
+        if ({"ask_side_effects", "ask_recommendation", "ask_mechanism"} & intents) and not has_pair:
+            return token_count <= 8
+
+        if (pair_hint or bool(_PAIR_REQUIRED_INTENTS & intents)) and not has_pair:
+            return token_count <= 6
+
+        return False
+
+    @staticmethod
+    def _select_entities_deterministic(
+        grouped: dict[str, list[GraphEntity]],
+    ) -> tuple[list[GraphEntity], dict[str, list[GraphEntity]]]:
+        selected: list[GraphEntity] = []
+        ambiguous: dict[str, list[GraphEntity]] = {}
+
+        for entity_type in ["drug", "herb"]:
+            rows = grouped.get(entity_type, [])
+            if not rows:
+                continue
+
+            top = rows[0]
+            second = rows[1] if len(rows) > 1 else None
+
+            if second is None:
+                if top.confidence >= 0.72:
+                    selected.append(top)
+                elif top.confidence >= 0.62:
+                    ambiguous[entity_type] = rows[:4]
+                continue
+
+            gap = round(top.confidence - second.confidence, 3)
+            if top.confidence >= 0.86 and gap >= 0.07:
+                selected.append(top)
+                continue
+
+            if top.confidence >= 0.76 and gap >= 0.12:
+                selected.append(top)
+                continue
+
+            if top.confidence >= 0.66:
+                ambiguous[entity_type] = rows[:4]
+
+        return selected, ambiguous
+
+    def _needs_gemini_rerank(
+        self,
+        *,
+        intents: set[str],
+        pair_hint: bool,
+        grouped: dict[str, list[GraphEntity]],
+        selected: list[GraphEntity],
+        ambiguous: dict[str, list[GraphEntity]],
+    ) -> bool:
+        if not self.gemini_enabled:
+            return False
+
+        if ambiguous:
+            return True
+
+        pair_expected = pair_hint or bool(_PAIR_REQUIRED_INTENTS & intents)
+        if not pair_expected:
+            return False
+
+        if self._has_both_types(selected):
+            return False
+
+        for rows in grouped.values():
+            if len(rows) < 2:
+                continue
+            if rows[0].confidence < 0.82 and (rows[0].confidence - rows[1].confidence) <= 0.08:
+                return True
+
+        return False
+
+    def _rerank_with_gemini(
+        self,
+        *,
+        message: str,
+        history: list[ChatHistoryMessage],
+        grouped: dict[str, list[GraphEntity]],
+    ) -> tuple[list[GraphEntity], dict[str, list[GraphEntity]], bool]:
+        candidate_pool: list[GraphEntity] = []
+        for entity_type in ["drug", "herb"]:
+            candidate_pool.extend(grouped.get(entity_type, [])[:4])
+
+        if not candidate_pool:
+            return [], {}, False
+
+        candidate_payload = [
+            {
+                "type": item.type,
+                "id": item.id,
+                "name": item.name,
+                "matched_alias": item.matched_alias,
+                "confidence": item.confidence,
+            }
+            for item in candidate_pool
+        ]
+
+        recent_history = [item.content for item in self._recent_user_messages(history, limit=5)]
+        result = self.gemini_service.rerank_entity_candidates(
+            user_message=message,
+            recent_history=recent_history,
+            candidates=candidate_payload,
+        )
+        if not isinstance(result, dict):
+            return [], {}, False
+
+        candidate_map = {(item.type, item.id): item for item in candidate_pool}
+
+        selected: list[GraphEntity] = []
+        for row in result.get("selected", []):
+            if not isinstance(row, dict):
+                continue
+            entity_type = str(row.get("type") or "").strip()
+            try:
+                entity_id = int(row.get("id"))
+            except (TypeError, ValueError):
+                continue
+
+            candidate = candidate_map.get((entity_type, entity_id))
+            if candidate is None:
+                continue
+
+            if any(item.type == candidate.type for item in selected):
+                continue
+            selected.append(candidate)
+
+        ambiguous: dict[str, list[GraphEntity]] = {}
+        for row in result.get("clarification_options", []):
+            if not isinstance(row, dict):
+                continue
+            entity_type = str(row.get("type") or "").strip()
+            if entity_type not in {"drug", "herb"}:
+                continue
+
+            ids = row.get("candidate_ids", [])
+            if not isinstance(ids, list):
+                continue
+
+            options: list[GraphEntity] = []
+            for value in ids:
+                try:
+                    option_id = int(value)
+                except (TypeError, ValueError):
+                    continue
+                candidate = candidate_map.get((entity_type, option_id))
+                if candidate is None:
+                    continue
+                if any(item.id == candidate.id and item.type == candidate.type for item in options):
+                    continue
+                options.append(candidate)
+                if len(options) >= 4:
+                    break
+
+            if options:
+                ambiguous[entity_type] = options
+
+        return selected, ambiguous, bool(selected or ambiguous)
+
+    def _resolve_entities(
+        self,
+        *,
+        message: str,
+        history: list[ChatHistoryMessage],
+        intents: set[str],
+        message_ascii: str,
+        pair_hint: bool,
+        allow_gemini: bool,
+    ) -> ResolutionState:
+        candidates = self.graph.extract_entities(message, limit=12)
+        used_memory = False
+
+        if self._should_use_history(
+            intents=intents,
+            message_ascii=message_ascii,
+            current_candidates=candidates,
+            history=history,
+            pair_hint=pair_hint,
+        ):
+            from_history = self._extract_history_entities(history)
+            if from_history:
+                candidates = self._deduplicate_entities(candidates + from_history)
+                used_memory = True
+
+        grouped = self._group_by_type(candidates)
+        selected, ambiguous = self._select_entities_deterministic(grouped)
+        used_gemini = False
+
+        if allow_gemini and self._needs_gemini_rerank(
+            intents=intents,
+            pair_hint=pair_hint,
+            grouped=grouped,
+            selected=selected,
+            ambiguous=ambiguous,
+        ):
+            gemini_selected, gemini_ambiguous, gemini_applied = self._rerank_with_gemini(
+                message=message,
+                history=history,
+                grouped=grouped,
+            )
+            if gemini_applied:
+                merged_selected = self._pick_best_per_type(selected + gemini_selected)
+                selected = merged_selected
+                if gemini_ambiguous:
+                    ambiguous = gemini_ambiguous
+                used_gemini = True
+
+        selected = self._pick_best_per_type(selected)
+
+        return ResolutionState(
+            candidates=self._deduplicate_entities(candidates),
+            selected=selected,
+            ambiguous=ambiguous,
+            used_memory=used_memory,
+            used_gemini=used_gemini,
+        )
 
     def resolve_follow_up_entities(
         self,
@@ -157,22 +460,12 @@ class ChatService:
         if not history:
             return current_entities, False
 
-        user_messages = self._recent_user_messages(history, limit=8)
-        if not user_messages:
+        history_entities = self._extract_history_entities(history)
+        if not history_entities:
             return current_entities, False
 
-        latest_entities = self.graph.extract_entities(user_messages[-1].content, limit=8)
-        if not latest_entities:
-            merged_text = " ".join(item.content for item in user_messages)
-            latest_entities = self.graph.extract_entities(merged_text, limit=8)
-
-        if not latest_entities:
-            return current_entities, False
-
-        combined = self._deduplicate_entities(current_entities + latest_entities)
-        if len(combined) == len(current_entities):
-            return current_entities, False
-        return combined, True
+        combined = self._deduplicate_entities(current_entities + history_entities)
+        return combined, len(combined) > len(current_entities)
 
     def identify_medical_entities_via_graph(
         self,
@@ -180,24 +473,19 @@ class ChatService:
         history: list[ChatHistoryMessage],
         intents: set[str] | None = None,
     ) -> tuple[list[GraphEntity], bool]:
-        current = self.graph.extract_entities(message, limit=8)
-        entities = self._deduplicate_entities(current)
-        used_memory = False
+        detection = self.detect_intents(message, history)
+        merged_intents = set(intents or set()) | set(detection.intents)
+        pair_hint = self._is_pair_hint(detection.message_ascii)
 
-        intents = intents or set()
-        asks_pair_logic = bool({"interaction_query", "ask_side_effects", "ask_recommendation", "ask_mechanism"} & intents)
-        token_count = len([token for token in normalize_ascii(message).split(" ") if token])
-        short_elliptical_question = token_count <= 6
-        needs_context = (
-            "follow_up" in intents
-            or (asks_pair_logic and len(entities) == 1)
-            or (asks_pair_logic and len(entities) == 0 and short_elliptical_question)
+        state = self._resolve_entities(
+            message=message,
+            history=history,
+            intents=merged_intents,
+            message_ascii=detection.message_ascii,
+            pair_hint=pair_hint,
+            allow_gemini=False,
         )
-
-        if needs_context and self._history_has_entities(history):
-            entities, used_memory = self.resolve_follow_up_entities(message, history, entities)
-
-        return self._deduplicate_entities(entities), used_memory
+        return state.selected, state.used_memory
 
     def check_interaction_pair_via_graph(self, drug: GraphEntity, herb: GraphEntity) -> list[dict[str, object]]:
         return self.graph.get_interaction_evidence(drug, herb)
@@ -212,268 +500,306 @@ class ChatService:
             "canonical_name": entity.name,
             "aliases": aliases,
             "related_entities": related,
-            "label_vi": "Thuốc Tây" if entity.type == "drug" else "Thảo Dược",
+            "label_vi": self._entity_label_vi(entity.type),
         }
 
-    def _enrich_intents(self, intents: set[str], entities: list[GraphEntity], message_ascii: str) -> set[str]:
-        enriched = set(intents)
-        has_drug = any(item.type == "drug" for item in entities)
-        has_herb = any(item.type == "herb" for item in entities)
+    def _is_pair_required(
+        self,
+        *,
+        intents: set[str],
+        pair_hint: bool,
+        message_ascii: str,
+        candidates: list[GraphEntity],
+    ) -> bool:
+        if bool({"entity_identification", "entity_classification"} & intents) and not pair_hint:
+            if not (_PAIR_REQUIRED_INTENTS & intents):
+                return False
+        if pair_hint:
+            return True
+        if bool(_PAIR_REQUIRED_INTENTS & intents):
+            return True
+        interaction_context_markers = [" dang uong ", " uong ", " su dung ", " dung ", " ket hop "]
+        padded = f" {message_ascii} "
+        if candidates and any(marker in padded for marker in interaction_context_markers):
+            return True
+        return self._has_both_types(candidates)
+
+    def _decide_clarification_reason(
+        self,
+        *,
+        pair_required: bool,
+        selected_entities: list[GraphEntity],
+        ambiguous: dict[str, list[GraphEntity]],
+    ) -> tuple[bool, str | None]:
+        if not pair_required:
+            return False, None
+
+        has_drug = any(item.type == "drug" for item in selected_entities)
+        has_herb = any(item.type == "herb" for item in selected_entities)
 
         if has_drug and has_herb:
-            if {"ask_side_effects", "ask_recommendation", "ask_mechanism"}.intersection(enriched):
-                enriched.add("interaction_query")
-            if "interaction_query" not in enriched and "co" in message_ascii and "khong" in message_ascii:
-                enriched.add("interaction_query")
+            return False, None
 
-        if not enriched:
-            enriched.add("clarification_needed")
+        if ambiguous.get("drug") or ambiguous.get("herb"):
+            return True, "ambiguous"
 
-        return enriched
+        if has_drug and not has_herb:
+            return True, "missing_herb"
+
+        if has_herb and not has_drug:
+            return True, "missing_drug"
+
+        return True, "unmatched"
 
     def build_response_plan(self, message: str, history: list[ChatHistoryMessage]) -> ResponsePlan:
         detection = self.detect_intents(message, history)
         intents = set(detection.intents)
-        entities, used_memory = self.identify_medical_entities_via_graph(message, history, intents=intents)
+        pair_hint = self._is_pair_hint(detection.message_ascii)
+        if pair_hint:
+            intents.add("interaction_query")
 
-        intents = self._enrich_intents(intents, entities, detection.message_ascii)
-        drugs = [item for item in entities if item.type == "drug"]
-        herbs = [item for item in entities if item.type == "herb"]
-
-        interactions: list[dict[str, object]] = []
-        for drug in drugs:
-            for herb in herbs:
-                interactions.extend(self.check_interaction_pair_via_graph(drug, herb))
-        interactions.sort(key=lambda row: (0 if row["severity"] == "high" else 1, row["drug_name"], row["herb_name"]))
-
-        clarification_needed = False
-        asks_pair_logic = bool({"interaction_query", "ask_side_effects", "ask_recommendation", "ask_mechanism"} & intents)
-        if asks_pair_logic and not (drugs and herbs):
-            clarification_needed = True
-            intents.add("clarification_needed")
-
-        entity_infos = [self.search_drug_info(item) for item in entities[:4]]
-        primary_medical_present = bool(_PRIMARY_INTENTS.intersection(intents))
-        has_explicit_primary = bool(
-            {
-                "interaction_query",
-                "ask_side_effects",
-                "ask_recommendation",
-                "ask_mechanism",
-                "entity_classification",
-                "related_entities",
-            }
-            & intents
+        state = self._resolve_entities(
+            message=message,
+            history=history,
+            intents=intents,
+            message_ascii=detection.message_ascii,
+            pair_hint=pair_hint,
+            allow_gemini=True,
         )
 
-        response_parts = {
-            "include_greeting": "greeting" in intents,
-            "include_help": "help" in intents and not primary_medical_present,
-            "include_interaction_answer": (
-                ("interaction_query" in intents and not clarification_needed)
-                or ("follow_up" in intents and not has_explicit_primary and bool(interactions))
-            ),
-            "include_side_effects": "ask_side_effects" in intents and bool(interactions) and not clarification_needed,
-            "include_recommendation": "ask_recommendation" in intents and bool(interactions) and not clarification_needed,
-            "include_mechanism": "ask_mechanism" in intents and bool(interactions) and not clarification_needed,
-            "include_classification": "entity_classification" in intents and bool(entities),
-            "include_related_entities": "related_entities" in intents and bool(entities),
-        }
+        entities = state.selected
+        drug = next((item for item in entities if item.type == "drug"), None)
+        herb = next((item for item in entities if item.type == "herb"), None)
+
+        interactions: list[dict[str, object]] = []
+        if drug is not None and herb is not None:
+            interactions = self.check_interaction_pair_via_graph(drug, herb)
+
+        pair_required = self._is_pair_required(
+            intents=intents,
+            pair_hint=pair_hint,
+            message_ascii=detection.message_ascii,
+            candidates=state.candidates,
+        )
+        clarification_needed, clarification_reason = self._decide_clarification_reason(
+            pair_required=pair_required,
+            selected_entities=entities,
+            ambiguous=state.ambiguous,
+        )
+
+        if clarification_needed:
+            intents.add("clarification")
 
         return ResponsePlan(
             intents=intents,
             message=message.strip(),
             message_ascii=detection.message_ascii,
             history=history[-10:],
+            pair_hint=pair_hint,
+            candidates=state.candidates,
             entities=entities,
+            ambiguous_options=state.ambiguous,
             interactions=interactions,
-            entity_infos=entity_infos,
-            used_memory_for_entities=used_memory,
             clarification_needed=clarification_needed,
-            response_parts=response_parts,
+            clarification_reason=clarification_reason,
+            used_memory_for_entities=state.used_memory,
+            used_gemini_for_resolution=state.used_gemini,
         )
 
     def _plan_as_json(self, plan: ResponsePlan) -> dict[str, object]:
-        primary_evidence = None
-        if plan.interactions:
-            first = plan.interactions[0]
-            primary_evidence = {
-                "mechanism": first.get("mechanism", ""),
-                "possible_consequences": first.get("possible_consequences", []),
-                "recommendation": first.get("recommendation", ""),
-            }
-
         return {
             "intents": sorted(plan.intents),
+            "pair_hint": plan.pair_hint,
             "entities": [item.__dict__ for item in plan.entities],
+            "candidates": [item.__dict__ for item in plan.candidates[:8]],
+            "ambiguous_options": {
+                key: [item.__dict__ for item in value]
+                for key, value in plan.ambiguous_options.items()
+            },
             "interaction_found": bool(plan.interactions),
-            "evidence": primary_evidence,
-            "used_memory": plan.used_memory_for_entities,
-            "clarification_needed": plan.clarification_needed,
-            "response_parts": plan.response_parts,
             "interactions": plan.interactions,
-            "entity_infos": plan.entity_infos,
+            "clarification_needed": plan.clarification_needed,
+            "clarification_reason": plan.clarification_reason,
+            "used_memory": plan.used_memory_for_entities,
+            "used_gemini_for_resolution": plan.used_gemini_for_resolution,
         }
 
     def build_grounded_prompt(self, plan: ResponsePlan) -> str:
         history_lines = [f"{item.role}: {item.content}" for item in plan.history[-8:]]
-        plan_json = self._plan_as_json(plan)
         return (
             f"Người dùng: {plan.message}\n\n"
             "Lịch sử gần nhất:\n"
             + ("\n".join(history_lines) if history_lines else "(không có)")
             + "\n\nRESPONSE_PLAN_JSON:\n"
-            + json.dumps(plan_json, ensure_ascii=False, indent=2)
+            + json.dumps(self._plan_as_json(plan), ensure_ascii=False, indent=2)
             + "\n\nYÊU CẦU:\n"
-            + "1) Trả lời bằng tiếng Việt.\n"
-            + "2) Bắt buộc xử lý tất cả phần `response_parts` được bật true.\n"
-            + "3) Nếu include_greeting=true thì chào ngắn gọn 1 câu.\n"
-            + "4) Nếu có câu hỏi y khoa hợp lệ thì không được trả lời social-only.\n"
-            + "5) Chỉ dùng dữ liệu trong RESPONSE_PLAN_JSON, không bịa kiến thức ngoài.\n"
-            + "6) Nếu clarification_needed=true thì yêu cầu người dùng nêu rõ 1 thuốc tây + 1 thảo dược.\n"
-            + "7) Nếu include_side_effects=true thì nêu hậu quả/tác dụng phụ từ evidence.\n"
-            + "8) Nếu include_recommendation=true thì nêu khuyến nghị từ evidence.\n"
-            + "9) Tránh dài dòng, rõ ràng, an toàn.\n"
+            + "- Chỉ dùng dữ liệu trong RESPONSE_PLAN_JSON.\n"
+            + "- Trả lời ngắn gọn, rõ ràng bằng tiếng Việt.\n"
+            + "- Không bịa thực thể ngoài danh sách cục bộ.\n"
         )
 
     def generate_gemini_response(self, plan: ResponsePlan) -> str | None:
+        if not self.gemini_enabled:
+            return None
+
         system_instruction = (
-            "Bạn là trợ lý HerbaGuard AI. Bạn chỉ được dùng dữ liệu cung cấp trong plan để trả lời. "
-            "Không suy diễn ngoài dữ liệu local. Không bỏ sót intent quan trọng."
+            "Bạn là trợ lý HerbaGuard AI. Trả lời ngắn gọn, rõ ràng, và chỉ dựa trên dữ liệu local được cung cấp."
         )
         prompt = self.build_grounded_prompt(plan)
         return self.gemini_service.generate_grounded_answer(prompt=prompt, system_instruction=system_instruction)
 
     @staticmethod
-    def _answer_has_greeting(answer_ascii: str) -> bool:
-        return "xin chao" in answer_ascii or "chao" in answer_ascii or "hello" in answer_ascii
+    def _line_or_default(value: str, default: str) -> str:
+        cleaned = str(value or "").strip()
+        return cleaned if cleaned else default
 
-    def _postprocess_answer(self, answer: str, plan: ResponsePlan) -> str:
-        text = answer.strip()
-        ascii_text = normalize_ascii(text)
+    def _build_interaction_answer(self, plan: ResponsePlan) -> str:
+        greeting = "Xin chào bạn.\n\n" if "greeting" in plan.intents else ""
 
-        if plan.response_parts["include_greeting"] and not self._answer_has_greeting(ascii_text):
-            text = "Xin chào bạn. " + text
-            ascii_text = normalize_ascii(text)
-
-        if plan.response_parts["include_interaction_answer"] and plan.interactions:
-            first = plan.interactions[0]
-            pair_hint = f"{first['drug_name']} và {first['herb_name']}"
-            if normalize_ascii(str(first["drug_name"])) not in ascii_text or normalize_ascii(str(first["herb_name"])) not in ascii_text:
-                text += f"\nDữ liệu local ghi nhận cặp {pair_hint} có tương tác."
-                ascii_text = normalize_ascii(text)
-
-        if plan.response_parts["include_interaction_answer"] and not plan.interactions:
-            drugs = [item for item in plan.entities if item.type == "drug"]
-            herbs = [item for item in plan.entities if item.type == "herb"]
-            if drugs and herbs and "chua tim thay tuong tac" not in ascii_text:
-                text += "\nHiện chưa tìm thấy tương tác giữa các cặp bạn hỏi trong dữ liệu local hiện có."
-                ascii_text = normalize_ascii(text)
-
-        if plan.response_parts["include_classification"]:
-            if "thuoc tay" not in ascii_text and "thao duoc" not in ascii_text:
-                chunks = []
-                for entity in plan.entities[:2]:
-                    label = "thuốc tây" if entity.type == "drug" else "thảo dược"
-                    chunks.append(f"'{entity.name}' là {label}")
-                if chunks:
-                    text += "\n" + "; ".join(chunks) + "."
-                    ascii_text = normalize_ascii(text)
-
-        if plan.clarification_needed and "nêu rõ" not in ascii_text:
-            text += "\nMình cần bạn nêu rõ 1 thuốc tây và 1 thảo dược để kiểm tra chính xác."
-
-        if plan.response_parts["include_side_effects"] and plan.interactions:
-            if "tac dung phu" not in ascii_text and "hau qua" not in ascii_text:
-                consequences = plan.interactions[0].get("possible_consequences", [])
-                if consequences:
-                    text += f"\nHậu quả có thể gặp: {consequences[0]}."
-
-        if plan.response_parts["include_recommendation"] and plan.interactions:
-            if "khuyen nghi" not in ascii_text and "nen" not in ascii_text:
-                text += f"\nKhuyến nghị: {plan.interactions[0].get('recommendation', '')}".rstrip()
-
-        return text.strip()
-
-    def build_fallback_response(self, plan: ResponsePlan) -> tuple[str, bool]:
-        lines: list[str] = []
-        fallback = False
-
-        if plan.response_parts["include_greeting"]:
-            lines.append("Xin chào bạn.")
-
-        if plan.clarification_needed:
-            names = ", ".join(item.name for item in plan.entities[:2]) if plan.entities else ""
-            if names:
-                lines.append(f"Mình đã nhận diện: {names}.")
-            lines.append("Bạn vui lòng nêu rõ 1 thuốc tây và 1 thảo dược để mình kiểm tra tương tác chính xác.")
-            return " ".join(lines).strip(), True
-
-        if plan.response_parts["include_classification"] and plan.entities:
-            for entity in plan.entities[:2]:
-                label = "thuốc tây" if entity.type == "drug" else "thảo dược"
-                lines.append(f"'{entity.name}' được phân loại là {label}.")
-
-        if plan.response_parts["include_interaction_answer"]:
-            if plan.interactions:
-                if len(plan.interactions) == 1:
-                    first = plan.interactions[0]
-                    level = "cao" if str(first["severity"]) == "high" else "cần theo dõi"
-                    lines.append(
-                        f"Dữ liệu local cho thấy {first['drug_name']} và {first['herb_name']} có nguy cơ tương tác mức {level}."
-                    )
-                else:
-                    pair_lines = [
-                        f"- {row['drug_name']} + {row['herb_name']}: mức {'cao' if row['severity'] == 'high' else 'cần theo dõi'}"
-                        for row in plan.interactions[:4]
-                    ]
-                    lines.append("Có các tương tác được ghi nhận:\n" + "\n".join(pair_lines))
-            else:
-                drugs = [item for item in plan.entities if item.type == "drug"]
-                herbs = [item for item in plan.entities if item.type == "herb"]
-                if drugs and herbs:
-                    lines.append("Hiện chưa tìm thấy tương tác giữa các cặp bạn hỏi trong dữ liệu local hiện có.")
+        drug = next((item for item in plan.entities if item.type == "drug"), None)
+        herb = next((item for item in plan.entities if item.type == "herb"), None)
+        if drug is None or herb is None:
+            return greeting + "Mình chưa đủ thông tin để kết luận tương tác cho cặp bạn hỏi."
 
         if plan.interactions:
             first = plan.interactions[0]
-            if plan.response_parts["include_mechanism"]:
-                lines.append(f"Cơ chế: {first['mechanism']}")
-            if plan.response_parts["include_side_effects"]:
-                consequences = first.get("possible_consequences", [])
-                if consequences:
-                    lines.append("Hậu quả/tác dụng phụ có thể gặp: " + "; ".join(str(item) for item in consequences[:3]) + ".")
-            if plan.response_parts["include_recommendation"]:
-                lines.append("Khuyến nghị: " + str(first["recommendation"]))
+            consequences = first.get("possible_consequences", [])
+            if not isinstance(consequences, list):
+                consequences = []
+            consequence_text = "; ".join(str(item).strip() for item in consequences if str(item).strip())
+            if not consequence_text:
+                consequence_text = "Chưa có mô tả chi tiết trong bộ dữ liệu hiện tại."
 
-        if plan.response_parts["include_related_entities"] and plan.entity_infos:
-            related = []
-            for info in plan.entity_infos[:2]:
-                related.extend(info.get("related_entities", [])[:3])
-            unique_related = []
-            seen = set()
-            for item in related:
-                key = normalize_ascii(str(item))
-                if key in seen or not key:
+            lines = [
+                f"Kết luận: Có ghi nhận tương tác giữa {drug.name} và {herb.name} trong dữ liệu nội bộ.",
+                f"Cơ chế: {self._line_or_default(str(first.get('mechanism', '')), 'Chưa có mô tả cơ chế chi tiết.')}",
+                f"Hậu quả có thể gặp: {consequence_text}",
+                f"Khuyến nghị: {self._line_or_default(str(first.get('recommendation', '')), 'Nên trao đổi bác sĩ/dược sĩ trước khi phối hợp.')}",
+                f"Thực thể đã chuẩn hóa: {self._normalize_names([drug, herb])}",
+                "Nguồn dữ liệu nội bộ: " + ", ".join(_CITATIONS),
+            ]
+            return greeting + "\n".join(lines)
+
+        lines = [
+            f"Kết luận: Chưa ghi nhận tương tác trực tiếp giữa {drug.name} và {herb.name} trong dữ liệu nội bộ hiện có.",
+            "Khuyến nghị: Nếu bạn vẫn cần dùng đồng thời, nên theo dõi triệu chứng và hỏi bác sĩ/dược sĩ để xác nhận lâm sàng.",
+            f"Thực thể đã chuẩn hóa: {self._normalize_names([drug, herb])}",
+            "Nguồn dữ liệu nội bộ: " + ", ".join(_CITATIONS),
+        ]
+        return greeting + "\n".join(lines)
+
+    def _build_entity_answer(self, plan: ResponsePlan) -> str:
+        greeting = "Xin chào bạn.\n\n" if "greeting" in plan.intents else ""
+        entity = plan.entities[0]
+        info = self.search_drug_info(entity)
+        related = [str(item).strip() for item in info.get("related_entities", []) if str(item).strip()]
+
+        lines = [
+            f"Kết luận: {entity.name} được nhận diện là {info['label_vi'].lower()} trong cơ sở dữ liệu nội bộ.",
+            f"Thực thể đã chuẩn hóa: {entity.name} ({info['label_vi']}).",
+        ]
+
+        if related:
+            lines.append("Gợi ý kiểm tra thêm: " + ", ".join(related[:4]))
+
+        lines.append("Nguồn dữ liệu nội bộ: " + ", ".join(_CITATIONS[1:]))
+        return greeting + "\n".join(lines)
+
+    @staticmethod
+    def _names_from_candidates(items: list[GraphEntity], limit: int = 4) -> list[str]:
+        output: list[str] = []
+        seen: set[str] = set()
+        for item in items:
+            key = normalize_ascii(item.name)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            output.append(item.name)
+            if len(output) >= limit:
+                break
+        return output
+
+    def _build_clarification_answer(self, plan: ResponsePlan) -> str:
+        greeting = "Xin chào bạn.\n\n" if "greeting" in plan.intents else ""
+        reason = plan.clarification_reason or "unmatched"
+
+        if reason == "ambiguous":
+            lines = ["Mình chưa chắc tên bạn nhập đang trỏ tới thực thể nào trong dữ liệu nội bộ."]
+            for entity_type in ["drug", "herb"]:
+                options = self._names_from_candidates(plan.ambiguous_options.get(entity_type, []), limit=4)
+                if not options:
                     continue
-                seen.add(key)
-                unique_related.append(str(item))
-            if unique_related:
-                lines.append("Bạn có thể kiểm tra thêm với: " + ", ".join(unique_related[:5]) + ".")
+                label = "thuốc" if entity_type == "drug" else "thảo dược"
+                lines.append(f"Bạn chọn giúp {label}: " + ", ".join(options) + ".")
+            lines.append("Nguồn dữ liệu nội bộ: " + ", ".join(_CITATIONS))
+            return greeting + "\n".join(lines)
 
-        if plan.response_parts["include_help"]:
-            lines.append(
-                "Mình có thể giúp kiểm tra tương tác thuốc tây - thảo dược. "
-                "Ví dụ: 'warfarin và nhân sâm có tương tác không?'."
-            )
+        selected_drug = next((item for item in plan.entities if item.type == "drug"), None)
+        selected_herb = next((item for item in plan.entities if item.type == "herb"), None)
 
-        if not lines:
-            fallback = True
-            lines.append(
-                "Xin lỗi, mình chưa đủ dữ liệu local để kết luận câu hỏi này. "
-                "Bạn hãy nêu rõ tên thuốc tây và thảo dược cụ thể."
-            )
+        if reason == "missing_herb" and selected_drug is not None:
+            suggestions = [node.canonical_name for node in self.graph.related_entities(selected_drug, target_type="herb", limit=4)]
+            lines = [
+                f"Mình đã chuẩn hóa được thuốc tây: {selected_drug.name}.",
+                f"Bạn muốn kiểm tra {selected_drug.name} với thảo dược nào?",
+            ]
+            if suggestions:
+                lines.append("Bạn có thể chọn nhanh: " + ", ".join(suggestions) + ".")
+            return greeting + "\n".join(lines)
 
-        return " ".join(lines).strip(), fallback
+        if reason == "missing_drug" and selected_herb is not None:
+            suggestions = [node.canonical_name for node in self.graph.related_entities(selected_herb, target_type="drug", limit=4)]
+            lines = [
+                f"Mình đã chuẩn hóa được thảo dược: {selected_herb.name}.",
+                f"Bạn muốn kiểm tra {selected_herb.name} với thuốc tây nào?",
+            ]
+            if suggestions:
+                lines.append("Bạn có thể chọn nhanh: " + ", ".join(suggestions) + ".")
+            return greeting + "\n".join(lines)
+
+        hint_names = self._names_from_candidates(plan.candidates, limit=4)
+        lines = [
+            "Mình chưa khớp được tên thuốc/thảo dược của bạn với dữ liệu nội bộ hiện có.",
+            "Bạn thử nhập lại tên gần đúng hoặc đầy đủ hơn.",
+        ]
+        if hint_names:
+            lines.append("Ví dụ có trong hệ thống: " + ", ".join(hint_names) + ".")
+        return greeting + "\n".join(lines)
+
+    def _build_help_answer(self, plan: ResponsePlan) -> str:
+        greeting = "Xin chào bạn.\n\n" if "greeting" in plan.intents else ""
+        return (
+            greeting
+            + "Mình có thể giúp kiểm tra tương tác thuốc tây - thảo dược dựa trên dữ liệu nội bộ.\n"
+            + "Ví dụ: 'warfarin với nhân sâm có tương tác không?'."
+        )
+
+    def build_fallback_response(self, plan: ResponsePlan) -> tuple[str, bool]:
+        if plan.clarification_needed:
+            return self._build_clarification_answer(plan), True
+
+        if self._has_both_types(plan.entities):
+            return self._build_interaction_answer(plan), True
+
+        entity_info_intent = bool({"entity_identification", "entity_classification"} & plan.intents)
+        if entity_info_intent and plan.entities:
+            return self._build_entity_answer(plan), True
+
+        if "related_entities" in plan.intents and plan.entities:
+            return self._build_entity_answer(plan), True
+
+        if plan.entities and not plan.clarification_needed and not self._is_pair_required(
+            intents=plan.intents,
+            pair_hint=plan.pair_hint,
+            message_ascii=plan.message_ascii,
+            candidates=plan.candidates,
+        ):
+            return self._build_entity_answer(plan), True
+
+        if "help" in plan.intents or "greeting" in plan.intents:
+            return self._build_help_answer(plan), True
+
+        return self._build_clarification_answer(plan), True
 
     def _build_grounding(self, plan: ResponsePlan) -> ChatGrounding:
         interactions = self._as_grounding_interactions(plan.interactions)
@@ -497,30 +823,14 @@ class ChatService:
         plan = self.build_response_plan(message, history)
         grounding = self._build_grounding(plan)
 
-        answer_text = None
-        used_gemini = False
-
-        if self.gemini_enabled:
-            gemini_answer = self.generate_gemini_response(plan)
-            if gemini_answer:
-                answer_text = self._postprocess_answer(gemini_answer, plan)
-                used_gemini = True
-
-        fallback_answer, fallback_flag = self.build_fallback_response(plan)
-        if not answer_text:
-            answer_text = fallback_answer
-
-        # Contract:
-        # - `fallback=True` when chatbot does not use Gemini orchestrator (local grounded path),
-        #   or when evidence is insufficient and clarification fallback is required.
-        # - `fallback=False` only when Gemini path is used successfully without fallback content.
-        effective_fallback = fallback_flag or (not used_gemini)
+        answer_text, _ = self.build_fallback_response(plan)
+        used_gemini = plan.used_gemini_for_resolution
 
         return ChatResponse(
             answer=answer_text,
             grounding=grounding,
             citations=_CITATIONS,
-            fallback=effective_fallback,
+            fallback=not used_gemini,
             orchestrator="gemini" if used_gemini else "local",
         )
 

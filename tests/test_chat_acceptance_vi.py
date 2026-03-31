@@ -122,6 +122,21 @@ class ChatAcceptanceVietnameseTests(unittest.TestCase):
         has_grounding_signal = bool(payload["grounding"].get("interactions")) or bool(payload["grounding"].get("entities"))
         self.assertTrue(has_medical_marker or has_grounding_signal, payload["answer"])
 
+    def _assert_clarification(self, payload: dict) -> None:
+        answer_ascii = normalize_ascii(payload["answer"])
+        self.assertTrue(
+            any(
+                marker in answer_ascii
+                for marker in [
+                    "ban muon kiem tra",
+                    "ban chon giup",
+                    "chua khop duoc ten",
+                    "nhap lai ten",
+                ]
+            ),
+            payload["answer"],
+        )
+
     def _assert_has_entities(self, payload: dict, expected_names: list[str]) -> None:
         names_ascii = {normalize_ascii(item["name"]) for item in payload["grounding"].get("entities", [])}
         for name in expected_names:
@@ -284,19 +299,18 @@ class ChatAcceptanceVietnameseTests(unittest.TestCase):
     # I. Clarification needed
     def test_i1_needs_pair_clarification(self) -> None:
         payload = self._chat(self._new_session(), "nhân sâm có nguy hiểm không?")
-        answer_ascii = normalize_ascii(payload["answer"])
         self.assertTrue(payload["fallback"])
-        self.assertIn("neu ro 1 thuoc tay", answer_ascii)
+        self._assert_clarification(payload)
 
     def test_i2_missing_entity_reference(self) -> None:
         payload = self._chat(self._new_session(), "thuốc đó có tương tác không?")
         self.assertTrue(payload["fallback"])
-        self.assertIn("nêu rõ", payload["answer"].lower())
+        self._assert_clarification(payload)
 
     def test_i3_missing_context_side_effects(self) -> None:
         payload = self._chat(self._new_session(), "có tác dụng phụ gì?")
         self.assertTrue(payload["fallback"])
-        self.assertIn("nêu rõ", payload["answer"].lower())
+        self._assert_clarification(payload)
 
     # J. Unknown / no evidence
     def test_j1_unknown_herb(self) -> None:
@@ -312,7 +326,7 @@ class ChatAcceptanceVietnameseTests(unittest.TestCase):
     def test_j3_unspecific_herb(self) -> None:
         payload = self._chat(self._new_session(), "cây thuốc gia truyền nhà tôi có tương tác với aspirin không?")
         self.assertTrue(payload["fallback"])
-        self.assertIn("nêu rõ", payload["answer"].lower())
+        self._assert_clarification(payload)
 
     # K. Casual language + medical question
     def test_k1_casual_language_still_resolves(self) -> None:

@@ -288,10 +288,22 @@ class KnowledgeGraphService:
             if current is None or candidate.confidence > current.confidence:
                 candidates[key] = candidate
 
-        if not candidates and query_token_count <= 4 and self._looks_like_entity_phrase(query_ascii):
-            # Fallback to resolver search only for short entity-like phrases.
-            search_hits = self.resolver.search(text, limit=limit)
-            return [self._extract_from_match(item) for item in search_hits]
+        fuzzy_hits = self.resolver.extract_from_text(text, limit=max(8, limit * 2), threshold=0.6)
+        for hit in fuzzy_hits:
+            key = (hit.entity_type, hit.entity_id)
+            current = candidates.get(key)
+            candidate = self._extract_from_match(hit)
+            if current is None or candidate.confidence > current.confidence:
+                candidates[key] = candidate
+
+        if not candidates and query_token_count <= 5 and self._looks_like_entity_phrase(query_ascii):
+            search_hits = self.resolver.search(text, limit=max(limit, 6), threshold=0.6)
+            for hit in search_hits:
+                key = (hit.entity_type, hit.entity_id)
+                current = candidates.get(key)
+                candidate = self._extract_from_match(hit)
+                if current is None or candidate.confidence > current.confidence:
+                    candidates[key] = candidate
 
         output = sorted(candidates.values(), key=lambda item: (-item.confidence, item.name))
         return output[:limit]

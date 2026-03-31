@@ -43,7 +43,7 @@
     </nav>
 
     <main class="main-content chat-layout">
-        <section class="chat-card">
+        <section class="chat-card" aria-label="Trợ lý HerbaGuard AI">
             <div class="chat-header">
                 <div>
                     <h1>Trợ Lý HerbaGuard AI</h1>
@@ -60,8 +60,10 @@
                 <button class="quick-question" type="button" data-question="Gừng là thuốc tây hay thảo dược?">Gừng là loại gì?</button>
             </div>
 
-            <div id="chatLog" class="chat-log"></div>
-            <div id="typingIndicator" class="typing-indicator hidden">Trợ lý đang trả lời...</div>
+            <div class="chat-log-shell">
+                <div id="chatLog" class="chat-log" aria-live="polite" aria-label="Lịch sử hội thoại"></div>
+                <div id="typingIndicator" class="typing-indicator hidden">Trợ lý đang phân tích câu hỏi...</div>
+            </div>
 
             <form id="chatForm" class="chat-compose" novalidate>
                 <textarea id="chatInput" placeholder="Đặt câu hỏi về tương tác thuốc tây và thảo dược..." maxlength="4000"></textarea>
