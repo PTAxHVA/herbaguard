@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from config import load_config
+from database.mongo import get_mongo_database
 from models import (
     AuthResponse,
     AuthUser,
@@ -41,26 +40,29 @@ from services.normalize import deduplicate_inputs
 from services.resolver import EntityResolver
 from services.user_data_service import UserDataService
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-STATIC_DIR = PROJECT_ROOT / "[herbaguard] app"
-DB_PATH = PROJECT_ROOT / "herbaguard_auth.db"
-DB_PATH = Path(os.environ.get("HERBAGUARD_DB_PATH", str(DB_PATH)))
+_CONFIG = load_config()
+if not _CONFIG.static_dir.exists():
+    raise RuntimeError(f"Không tìm thấy thư mục frontend: {_CONFIG.static_dir}")
 
-if not STATIC_DIR.exists():
-    raise RuntimeError(f"Không tìm thấy thư mục frontend: {STATIC_DIR}")
+_MONGO_DB = get_mongo_database(
+    _CONFIG.mongodb_uri,
+    _CONFIG.mongodb_db_name,
+    use_mock=_CONFIG.mongodb_use_mock,
+)
 
-_DATABASE = load_database(PROJECT_ROOT)
+_DATABASE = load_database(_CONFIG.project_root)
 _RESOLVER = EntityResolver(_DATABASE)
 _INTERACTION_SERVICE = InteractionService(_DATABASE, _RESOLVER)
 _GRAPH_SERVICE = KnowledgeGraphService(_DATABASE, _RESOLVER)
-_CHAT_MEMORY_SERVICE = ChatMemoryService(DB_PATH)
+_CHAT_MEMORY_SERVICE = ChatMemoryService(_MONGO_DB)
 _CHAT_SERVICE = ChatService(_GRAPH_SERVICE, memory_service=_CHAT_MEMORY_SERVICE)
-_AUTH_SERVICE = AuthService(DB_PATH)
-_USER_DATA_SERVICE = UserDataService(DB_PATH)
+_AUTH_SERVICE = AuthService(_MONGO_DB)
+_USER_DATA_SERVICE = UserDataService(_MONGO_DB)
+
 
 app = FastAPI(
     title="HerbaGuard",
-    version="2.0.0",
+    version="3.0.0",
     description="Vietnamese local-first herb-drug interaction assistant.",
 )
 
@@ -87,7 +89,7 @@ def _require_authenticated_user(authorization: str | None) -> AuthUser:
     return AuthUser(id=user.id, full_name=user.full_name, email=user.email)
 
 
-def _optional_user_id(authorization: str | None) -> int | None:
+def _optional_user_id(authorization: str | None) -> str | None:
     token = _extract_bearer_token(authorization)
     if not token:
         return None
@@ -189,29 +191,37 @@ def create_medicine(payload: MedicineUpsertRequest, authorization: str | None = 
 
 @app.put("/api/medicines/{medicine_id}", response_model=MedicineItem)
 def update_medicine(
-    medicine_id: int,
+    medicine_id: str,
     payload: MedicineUpsertRequest,
     authorization: str | None = Header(default=None),
 ) -> MedicineItem:
     user = _require_authenticated_user(authorization)
-    row = _USER_DATA_SERVICE.update_medicine(
-        user.id,
-        medicine_id,
-        name=payload.name,
-        dosage=payload.dosage,
-        instructions=payload.instructions,
-        stock_count=payload.stock_count,
-        kind=payload.kind,
-    )
+    try:
+        row = _USER_DATA_SERVICE.update_medicine(
+            user.id,
+            medicine_id,
+            name=payload.name,
+            dosage=payload.dosage,
+            instructions=payload.instructions,
+            stock_count=payload.stock_count,
+            kind=payload.kind,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     if row is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy thuốc cần cập nhật.")
     return row
 
 
 @app.delete("/api/medicines/{medicine_id}")
-def delete_medicine(medicine_id: int, authorization: str | None = Header(default=None)) -> dict[str, bool]:
+def delete_medicine(medicine_id: str, authorization: str | None = Header(default=None)) -> dict[str, bool]:
     user = _require_authenticated_user(authorization)
-    deleted = _USER_DATA_SERVICE.delete_medicine(user.id, medicine_id)
+    try:
+        deleted = _USER_DATA_SERVICE.delete_medicine(user.id, medicine_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     if not deleted:
         raise HTTPException(status_code=404, detail="Không tìm thấy thuốc cần xóa.")
     return {"success": True}
@@ -241,7 +251,7 @@ def create_reminder(payload: ReminderUpsertRequest, authorization: str | None = 
 
 @app.put("/api/reminders/{reminder_id}", response_model=ReminderItem)
 def update_reminder(
-    reminder_id: int,
+    reminder_id: str,
     payload: ReminderUpsertRequest,
     authorization: str | None = Header(default=None),
 ) -> ReminderItem:
@@ -265,9 +275,13 @@ def update_reminder(
 
 
 @app.delete("/api/reminders/{reminder_id}")
-def delete_reminder(reminder_id: int, authorization: str | None = Header(default=None)) -> dict[str, bool]:
+def delete_reminder(reminder_id: str, authorization: str | None = Header(default=None)) -> dict[str, bool]:
     user = _require_authenticated_user(authorization)
-    deleted = _USER_DATA_SERVICE.delete_reminder(user.id, reminder_id)
+    try:
+        deleted = _USER_DATA_SERVICE.delete_reminder(user.id, reminder_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     if not deleted:
         raise HTTPException(status_code=404, detail="Không tìm thấy lịch nhắc cần xóa.")
     return {"success": True}
@@ -376,7 +390,7 @@ def clear_chat_history(
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(_CONFIG.static_dir / "index.html")
 
 
-app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="frontend")
+app.mount("/", StaticFiles(directory=str(_CONFIG.static_dir), html=True), name="frontend")

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: herbaguard
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: herbaguard
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash

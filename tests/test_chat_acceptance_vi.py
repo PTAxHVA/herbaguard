@@ -3,24 +3,28 @@ from __future__ import annotations
 import importlib
 import os
 import sys
-import tempfile
 import unittest
 import uuid
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from database.mongo import clear_mongo_client_cache
 from services.normalize import normalize_ascii
 
 
 class ChatAcceptanceVietnameseTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_dir = tempfile.TemporaryDirectory()
-        cls.db_path = Path(cls.temp_dir.name) / "acceptance-vi.db"
-        os.environ["HERBAGUARD_DB_PATH"] = str(cls.db_path)
+        cls._saved_mongodb_uri = os.environ.get("MONGODB_URI")
+        cls._saved_mongodb_db_name = os.environ.get("MONGODB_DB_NAME")
+        cls._saved_mongodb_use_mock = os.environ.get("MONGODB_USE_MOCK")
         cls._saved_google_api_key = os.environ.pop("GOOGLE_API_KEY", None)
         cls._saved_gemini_model = os.environ.pop("GEMINI_MODEL", None)
+
+        os.environ["MONGODB_URI"] = "mongodb://127.0.0.1:27017"
+        os.environ["MONGODB_DB_NAME"] = f"herbaguard-test-acceptance-{uuid.uuid4().hex}"
+        os.environ["MONGODB_USE_MOCK"] = "1"
+        clear_mongo_client_cache()
 
         if "app" in sys.modules:
             del sys.modules["app"]
@@ -31,8 +35,19 @@ class ChatAcceptanceVietnameseTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls.client.close()
-        cls.temp_dir.cleanup()
-        os.environ.pop("HERBAGUARD_DB_PATH", None)
+        clear_mongo_client_cache()
+        if cls._saved_mongodb_uri is None:
+            os.environ.pop("MONGODB_URI", None)
+        else:
+            os.environ["MONGODB_URI"] = cls._saved_mongodb_uri
+        if cls._saved_mongodb_db_name is None:
+            os.environ.pop("MONGODB_DB_NAME", None)
+        else:
+            os.environ["MONGODB_DB_NAME"] = cls._saved_mongodb_db_name
+        if cls._saved_mongodb_use_mock is None:
+            os.environ.pop("MONGODB_USE_MOCK", None)
+        else:
+            os.environ["MONGODB_USE_MOCK"] = cls._saved_mongodb_use_mock
         if cls._saved_google_api_key is not None:
             os.environ["GOOGLE_API_KEY"] = cls._saved_google_api_key
         if cls._saved_gemini_model is not None:

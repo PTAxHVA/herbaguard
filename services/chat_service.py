@@ -527,7 +527,7 @@ class ChatService:
     def chat_with_memory(
         self,
         *,
-        user_id: int,
+        user_id: str,
         session_id: str,
         message: str,
         history: list[ChatHistoryMessage] | None = None,
@@ -566,12 +566,12 @@ class ChatService:
 
         return response
 
-    def get_history(self, *, user_id: int, session_id: str, limit: int = 80) -> list[StoredChatMessage]:
+    def get_history(self, *, user_id: str, session_id: str, limit: int = 80) -> list[StoredChatMessage]:
         if self.memory_service is None:
             return []
         return self.memory_service.get_history(user_id, session_id, limit=limit)
 
-    def clear_history(self, *, user_id: int, session_id: str) -> int:
+    def clear_history(self, *, user_id: str, session_id: str) -> int:
         if self.memory_service is None:
             return 0
         return self.memory_service.clear_history(user_id, session_id)

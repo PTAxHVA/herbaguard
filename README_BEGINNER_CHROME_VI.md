@@ -41,7 +41,7 @@ pwd
 ls
 ```
 
-Bạn phải thấy các file như `app.py`, `requirements.txt`, thư mục `[herbaguard] app`.
+Bạn phải thấy các file như `app.py`, `requirements.txt`, thư mục `frontend`.
 
 ---
 
@@ -72,7 +72,25 @@ python -m pip install -r requirements.txt
 
 ## 4. Chạy backend HerbaGuard
 
-### Cách an toàn (tránh đụng cổng 8000)
+### Bước 4.1: cấu hình MongoDB
+
+HerbaGuard dùng MongoDB để lưu tài khoản, tủ thuốc, lịch nhắc và lịch sử chat.
+
+Nếu bạn dùng MongoDB Atlas (khuyến nghị), chạy:
+
+```bash
+export MONGODB_URI="mongodb+srv://<user>:<pass>@<cluster>/?retryWrites=true&w=majority"
+export MONGODB_DB_NAME="herbaguard"
+```
+
+Nếu bạn chạy MongoDB local:
+
+```bash
+export MONGODB_URI="mongodb://127.0.0.1:27017"
+export MONGODB_DB_NAME="herbaguard"
+```
+
+### Bước 4.2: chạy server
 
 ```bash
 uvicorn app:app --host 127.0.0.1 --port 8010 --reload

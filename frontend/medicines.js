@@ -159,7 +159,9 @@ document.addEventListener("DOMContentLoaded", function () {
         medicineListEl.innerHTML = state.medicines
             .map((item) => {
                 const lowStock = Number(item.stock_count) <= 5;
-                const reminderCount = state.reminders.filter((reminder) => reminder.medicine_id === item.id).length;
+                const reminderCount = state.reminders.filter(
+                    (reminder) => String(reminder.medicine_id) === String(item.id)
+                ).length;
 
                 return `
                     <div class="medicine-card medicine-card-stack" data-medicine-id="${item.id}">
@@ -244,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function loadMedicineIntoForm(id) {
-        const item = state.medicines.find((medicine) => medicine.id === id);
+        const item = state.medicines.find((medicine) => String(medicine.id) === String(id));
         if (!item) {
             return;
         }
@@ -260,7 +262,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function loadReminderIntoForm(id) {
-        const item = state.reminders.find((reminder) => reminder.id === id);
+        const item = state.reminders.find((reminder) => String(reminder.id) === String(id));
         if (!item) {
             return;
         }
@@ -317,11 +319,11 @@ document.addEventListener("DOMContentLoaded", function () {
             stock_count: Number.isNaN(stockRaw) || stockRaw < 0 ? 0 : stockRaw,
         };
 
-        const editingId = Number.parseInt(medicineIdEl.value, 10);
+        const editingId = String(medicineIdEl.value || "").trim();
 
         setBusy(true);
         try {
-            if (editingId > 0) {
+            if (editingId) {
                 await api.updateMedicine(editingId, payload);
                 showFormMessage(medicineFormMsg, "success", "Đã cập nhật mục thành công.");
             } else {
@@ -349,7 +351,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const medicineId = Number.parseInt(reminderMedicineEl.value, 10);
+        const medicineId = String(reminderMedicineEl.value || "").trim();
         if (!medicineId) {
             showFormMessage(reminderFormMsg, "error", "Vui lòng chọn thuốc/thảo dược cho lịch nhắc.");
             return;
@@ -363,11 +365,11 @@ document.addEventListener("DOMContentLoaded", function () {
             is_enabled: reminderEnabledEl.checked,
         };
 
-        const editingId = Number.parseInt(reminderIdEl.value, 10);
+        const editingId = String(reminderIdEl.value || "").trim();
 
         setBusy(true);
         try {
-            if (editingId > 0) {
+            if (editingId) {
                 await api.updateReminder(editingId, payload);
                 showFormMessage(reminderFormMsg, "success", "Đã cập nhật lịch nhắc.");
             } else {
@@ -391,7 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const action = actionButton.dataset.action;
-        const id = Number.parseInt(actionButton.dataset.id, 10);
+        const id = String(actionButton.dataset.id || "").trim();
         if (!id) {
             return;
         }
@@ -429,7 +431,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const action = actionButton.dataset.action;
-        const id = Number.parseInt(actionButton.dataset.id, 10);
+        const id = String(actionButton.dataset.id || "").trim();
         if (!id) {
             return;
         }

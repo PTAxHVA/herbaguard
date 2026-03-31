@@ -88,7 +88,7 @@ class CheckInteractionResponse(BaseModel):
 
 
 class AuthUser(BaseModel):
-    id: int
+    id: str
     full_name: str
     email: str
 
@@ -149,7 +149,7 @@ class MedicineUpsertRequest(BaseModel):
 
 
 class MedicineItem(BaseModel):
-    id: int
+    id: str
     name: str
     dosage: str
     instructions: str
@@ -160,7 +160,7 @@ class MedicineItem(BaseModel):
 
 
 class ReminderUpsertRequest(BaseModel):
-    medicine_id: int = Field(..., ge=1)
+    medicine_id: str = Field(..., min_length=1, max_length=120)
     time_of_day: str = Field(..., min_length=4, max_length=5)
     frequency_note: str = Field(default="Hằng ngày", max_length=120)
     meal_note: str = Field(default="", max_length=120)
@@ -190,10 +190,18 @@ class ReminderUpsertRequest(BaseModel):
     def strip_optional_text(cls, value: str) -> str:
         return value.strip()
 
+    @field_validator("medicine_id")
+    @classmethod
+    def normalize_medicine_id(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("medicine_id không hợp lệ.")
+        return cleaned
+
 
 class ReminderItem(BaseModel):
-    id: int
-    medicine_id: int
+    id: str
+    medicine_id: str
     medicine_name: str
     time_of_day: str
     frequency_note: str
@@ -232,7 +240,7 @@ class DashboardData(BaseModel):
 
 
 class CheckHistoryItem(BaseModel):
-    id: int
+    id: str
     input_items: list[str]
     summary_level: SummaryLevel
     summary_title: str

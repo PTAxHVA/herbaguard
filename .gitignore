@@ -1,19 +1,39 @@
-# Environment variables (Sensitive Data)
-.env
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
 
-# Documentation
-README.md
-
-# Python
+# Python bytecode / caches
 __pycache__/
 *.py[cod]
 *$py.class
-*.db
-*.sqlite3
-herbaguard_auth.db
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
-# Virtual Environments
-herb_env/
+# Virtual environments
+.venv/
 venv/
 env/
+herb_env/
 myenv/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local databases / runtime artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Packaging / build
+build/
+dist/
+*.egg-info/

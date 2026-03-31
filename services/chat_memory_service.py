@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import json
-import sqlite3
 import uuid
-from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import datetime
 from threading import Lock
 from typing import Any
 
+from pymongo import ASCENDING, DESCENDING
+from pymongo.database import Database
+
 from models import ChatHistoryMessage, ChatRole
+from services.mongo_helpers import normalize_datetime, parse_object_id, utc_now
 
 
 @dataclass(frozen=True)
@@ -24,48 +24,21 @@ class StoredChatMessage:
 
 
 class ChatMemoryService:
-    def __init__(self, db_path: Path) -> None:
-        self.db_path = db_path
+    def __init__(self, db: Database) -> None:
+        self.db = db
+        self.collection = db["chat_messages"]
         self._lock = Lock()
-        self._init_db()
+        self._init_indexes()
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    @contextmanager
-    def _connection(self):
-        conn = self._connect()
-        try:
-            yield conn
-        finally:
-            conn.close()
-
-    def _init_db(self) -> None:
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS chat_messages (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    session_id TEXT NOT NULL,
-                    role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
-                    content TEXT NOT NULL,
-                    grounding_json TEXT,
-                    citations_json TEXT,
-                    fallback INTEGER,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_chat_messages_user_session
-                ON chat_messages (user_id, session_id, id)
-                """
-            )
-            conn.commit()
+    def _init_indexes(self) -> None:
+        self.collection.create_index(
+            [("user_id", ASCENDING), ("session_id", ASCENDING), ("created_at", ASCENDING), ("_id", ASCENDING)],
+            name="chat_messages_user_session_created",
+        )
+        self.collection.create_index(
+            [("user_id", ASCENDING), ("session_id", ASCENDING), ("_id", DESCENDING)],
+            name="chat_messages_user_session_desc",
+        )
 
     @staticmethod
     def _normalize_session_id(session_id: str | None) -> str:
@@ -75,80 +48,45 @@ class ChatMemoryService:
         return uuid.uuid4().hex
 
     @staticmethod
-    def _parse_datetime(value: str) -> datetime:
-        text = (value or "").strip()
-        if not text:
-            return datetime.now(timezone.utc)
+    def _doc_to_message(doc: dict[str, Any]) -> StoredChatMessage:
+        citations_raw = doc.get("citations")
+        citations = [str(item) for item in citations_raw] if isinstance(citations_raw, list) else []
 
-        try:
-            if "T" in text:
-                parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-            else:
-                parsed = datetime.strptime(text, "%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            return datetime.now(timezone.utc)
+        grounding_raw = doc.get("grounding")
+        grounding = grounding_raw if isinstance(grounding_raw, dict) else None
 
-        if parsed.tzinfo is None:
-            return parsed.replace(tzinfo=timezone.utc)
-        return parsed.astimezone(timezone.utc)
+        fallback_raw = doc.get("fallback")
+        fallback = bool(fallback_raw) if isinstance(fallback_raw, bool | int) else None
 
-    @staticmethod
-    def _decode_json_object(raw: str | None) -> dict[str, Any] | None:
-        if not raw:
-            return None
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError:
-            return None
-        if isinstance(parsed, dict):
-            return parsed
-        return None
+        role_value = str(doc.get("role") or "assistant")
+        role: ChatRole = "assistant" if role_value != "user" else "user"
 
-    @staticmethod
-    def _decode_json_list(raw: str | None) -> list[str]:
-        if not raw:
-            return []
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError:
-            return []
-        if not isinstance(parsed, list):
-            return []
-        return [str(item) for item in parsed]
-
-    @classmethod
-    def _row_to_message(cls, row: sqlite3.Row) -> StoredChatMessage:
         return StoredChatMessage(
-            role=str(row["role"]),
-            content=str(row["content"]),
-            created_at=cls._parse_datetime(str(row["created_at"])),
-            grounding=cls._decode_json_object(row["grounding_json"]),
-            citations=cls._decode_json_list(row["citations_json"]),
-            fallback=bool(row["fallback"]) if row["fallback"] is not None else None,
+            role=role,
+            content=str(doc.get("content") or ""),
+            created_at=normalize_datetime(doc.get("created_at")),
+            grounding=grounding,
+            citations=citations,
+            fallback=fallback,
         )
 
     def ensure_session_id(self, session_id: str | None) -> str:
         return self._normalize_session_id(session_id)
 
-    def get_latest_session_id(self, user_id: int) -> str | None:
-        with self._lock, self._connection() as conn:
-            row = conn.execute(
-                """
-                SELECT session_id
-                FROM chat_messages
-                WHERE user_id = ?
-                ORDER BY id DESC
-                LIMIT 1
-                """,
-                (user_id,),
-            ).fetchone()
+    def get_latest_session_id(self, user_id: str) -> str | None:
+        user_oid = parse_object_id(user_id, field_name="user_id")
+        row = self.collection.find_one(
+            {"user_id": user_oid},
+            sort=[("_id", DESCENDING)],
+            projection={"session_id": 1},
+        )
         if row is None:
             return None
-        return str(row["session_id"])
+        return str(row.get("session_id") or "") or None
 
     def append_message(
         self,
-        user_id: int,
+        user_id: str,
         session_id: str,
         role: ChatRole,
         content: str,
@@ -157,69 +95,50 @@ class ChatMemoryService:
         citations: list[str] | None = None,
         fallback: bool | None = None,
     ) -> StoredChatMessage:
+        user_oid = parse_object_id(user_id, field_name="user_id")
         session = self._normalize_session_id(session_id)
         clean_content = content.strip()
         if not clean_content:
             raise ValueError("Nội dung chat trống.")
 
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO chat_messages (
-                    user_id, session_id, role, content, grounding_json, citations_json, fallback
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    user_id,
-                    session,
-                    role,
-                    clean_content,
-                    json.dumps(grounding, ensure_ascii=False) if grounding is not None else None,
-                    json.dumps(citations or [], ensure_ascii=False),
-                    None if fallback is None else int(bool(fallback)),
-                ),
-            )
-            row = conn.execute(
-                """
-                SELECT role, content, grounding_json, citations_json, fallback, created_at
-                FROM chat_messages
-                WHERE id = last_insert_rowid()
-                """
-            ).fetchone()
-            conn.commit()
+        with self._lock:
+            doc = {
+                "user_id": user_oid,
+                "session_id": session,
+                "role": "assistant" if role != "user" else "user",
+                "content": clean_content,
+                "grounding": grounding if isinstance(grounding, dict) else None,
+                "citations": [str(item) for item in (citations or [])],
+                "fallback": fallback if fallback is None else bool(fallback),
+                "created_at": utc_now(),
+            }
+            insert_result = self.collection.insert_one(doc)
+            stored = self.collection.find_one({"_id": insert_result.inserted_id})
 
-        if row is None:
+        if stored is None:
             raise ValueError("Không thể lưu lịch sử chat.")
-        return self._row_to_message(row)
+        return self._doc_to_message(stored)
 
-    def get_history(self, user_id: int, session_id: str, limit: int = 80) -> list[StoredChatMessage]:
+    def get_history(self, user_id: str, session_id: str, limit: int = 80) -> list[StoredChatMessage]:
+        user_oid = parse_object_id(user_id, field_name="user_id")
         session = self._normalize_session_id(session_id)
         safe_limit = max(1, min(int(limit), 200))
 
-        with self._lock, self._connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT role, content, grounding_json, citations_json, fallback, created_at
-                FROM chat_messages
-                WHERE user_id = ? AND session_id = ?
-                ORDER BY id DESC
-                LIMIT ?
-                """,
-                (user_id, session, safe_limit),
-            ).fetchall()
+        cursor = self.collection.find(
+            {"user_id": user_oid, "session_id": session},
+            sort=[("_id", DESCENDING)],
+            limit=safe_limit,
+        )
+        rows = list(cursor)
 
-        # Convert to chronological order for rendering/context.
-        return [self._row_to_message(row) for row in reversed(rows)]
+        return [self._doc_to_message(row) for row in reversed(rows)]
 
-    def clear_history(self, user_id: int, session_id: str) -> int:
+    def clear_history(self, user_id: str, session_id: str) -> int:
+        user_oid = parse_object_id(user_id, field_name="user_id")
         session = self._normalize_session_id(session_id)
-        with self._lock, self._connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM chat_messages WHERE user_id = ? AND session_id = ?",
-                (user_id, session),
-            )
-            conn.commit()
-        return int(cursor.rowcount)
+        with self._lock:
+            result = self.collection.delete_many({"user_id": user_oid, "session_id": session})
+        return int(result.deleted_count)
 
     @staticmethod
     def to_history_messages(items: list[StoredChatMessage], limit: int = 20) -> list[ChatHistoryMessage]:

@@ -1,106 +1,38 @@
 from __future__ import annotations
 
-import json
-import sqlite3
-from contextlib import contextmanager
 from datetime import datetime, timedelta
-from pathlib import Path
 from threading import Lock
 from typing import Any
 
+from bson import ObjectId
+from pymongo import ASCENDING, DESCENDING
+from pymongo.database import Database
+
 from models import CheckHistoryItem, DashboardAlert, DashboardData, MedicineItem, ReminderItem, UserSettings
+from services.mongo_helpers import datetime_to_iso, parse_object_id, to_id_str, utc_now
 
 
 class UserDataService:
-    def __init__(self, db_path: Path) -> None:
-        self.db_path = db_path
+    def __init__(self, db: Database) -> None:
+        self.db = db
+        self.medicines = db["medicines"]
+        self.reminders = db["reminders"]
+        self.user_settings = db["user_settings"]
+        self.check_history = db["check_history"]
         self._lock = Lock()
-        self._init_db()
+        self._init_indexes()
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    @contextmanager
-    def _connection(self):
-        conn = self._connect()
-        try:
-            yield conn
-        finally:
-            conn.close()
-
-    def _init_db(self) -> None:
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS medicines (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    dosage TEXT NOT NULL DEFAULT '',
-                    instructions TEXT NOT NULL DEFAULT '',
-                    stock_count INTEGER NOT NULL DEFAULT 0,
-                    kind TEXT NOT NULL DEFAULT 'unknown',
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS reminders (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    medicine_id INTEGER NOT NULL,
-                    time_of_day TEXT NOT NULL,
-                    frequency_note TEXT NOT NULL DEFAULT 'Hằng ngày',
-                    meal_note TEXT NOT NULL DEFAULT '',
-                    is_enabled INTEGER NOT NULL DEFAULT 1,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY(medicine_id) REFERENCES medicines(id)
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS user_settings (
-                    user_id INTEGER PRIMARY KEY,
-                    voice_enabled INTEGER NOT NULL DEFAULT 0,
-                    large_text INTEGER NOT NULL DEFAULT 0,
-                    theme TEXT NOT NULL DEFAULT 'light',
-                    browser_notifications INTEGER NOT NULL DEFAULT 0,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS check_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    input_items TEXT NOT NULL,
-                    summary_level TEXT NOT NULL,
-                    summary_title TEXT NOT NULL,
-                    result_payload TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            conn.commit()
-
-    @staticmethod
-    def _medicine_from_row(row: sqlite3.Row) -> MedicineItem:
-        return MedicineItem(
-            id=int(row["id"]),
-            name=str(row["name"]),
-            dosage=str(row["dosage"]),
-            instructions=str(row["instructions"]),
-            stock_count=int(row["stock_count"]),
-            kind=str(row["kind"]),
-            created_at=str(row["created_at"]),
-            updated_at=str(row["updated_at"]),
+    def _init_indexes(self) -> None:
+        self.medicines.create_index([("user_id", ASCENDING), ("updated_at", DESCENDING)], name="medicines_user_updated")
+        self.reminders.create_index(
+            [("user_id", ASCENDING), ("is_enabled", DESCENDING), ("time_of_day", ASCENDING), ("_id", DESCENDING)],
+            name="reminders_user_schedule",
+        )
+        self.reminders.create_index([("medicine_id", ASCENDING)], name="reminders_medicine_id")
+        self.user_settings.create_index([("user_id", ASCENDING)], unique=True, name="user_settings_user_unique")
+        self.check_history.create_index(
+            [("user_id", ASCENDING), ("created_at", DESCENDING), ("_id", DESCENDING)],
+            name="check_history_user_created",
         )
 
     @staticmethod
@@ -115,23 +47,60 @@ class UserDataService:
             due = due + timedelta(days=1)
         return due.isoformat()
 
-    def list_medicines(self, user_id: int) -> list[MedicineItem]:
-        with self._lock, self._connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT id, name, dosage, instructions, stock_count, kind, created_at, updated_at
-                FROM medicines
-                WHERE user_id = ?
-                ORDER BY datetime(updated_at) DESC, id DESC
-                """,
-                (user_id,),
-            ).fetchall()
+    @staticmethod
+    def _medicine_from_doc(doc: dict[str, Any]) -> MedicineItem:
+        return MedicineItem(
+            id=to_id_str(doc["_id"]),
+            name=str(doc.get("name") or ""),
+            dosage=str(doc.get("dosage") or ""),
+            instructions=str(doc.get("instructions") or ""),
+            stock_count=int(doc.get("stock_count") or 0),
+            kind=str(doc.get("kind") or "unknown"),
+            created_at=datetime_to_iso(doc.get("created_at")),
+            updated_at=datetime_to_iso(doc.get("updated_at")),
+        )
 
-        return [self._medicine_from_row(row) for row in rows]
+    @classmethod
+    def _reminder_from_doc(cls, doc: dict[str, Any], medicine_name: str) -> ReminderItem:
+        time_of_day = str(doc.get("time_of_day") or "00:00")
+        return ReminderItem(
+            id=to_id_str(doc["_id"]),
+            medicine_id=to_id_str(doc.get("medicine_id") or ""),
+            medicine_name=medicine_name,
+            time_of_day=time_of_day,
+            frequency_note=str(doc.get("frequency_note") or "Hằng ngày"),
+            meal_note=str(doc.get("meal_note") or ""),
+            is_enabled=bool(doc.get("is_enabled", True)),
+            next_due_iso=cls._next_due_iso(time_of_day),
+            created_at=datetime_to_iso(doc.get("created_at")),
+            updated_at=datetime_to_iso(doc.get("updated_at")),
+        )
+
+    @staticmethod
+    def _user_oid(user_id: str) -> ObjectId:
+        return parse_object_id(user_id, field_name="user_id")
+
+    @staticmethod
+    def _medicine_oid(medicine_id: str) -> ObjectId:
+        return parse_object_id(medicine_id, field_name="medicine_id")
+
+    @staticmethod
+    def _reminder_oid(reminder_id: str) -> ObjectId:
+        return parse_object_id(reminder_id, field_name="reminder_id")
+
+    def list_medicines(self, user_id: str) -> list[MedicineItem]:
+        user_oid = self._user_oid(user_id)
+        rows = list(
+            self.medicines.find(
+                {"user_id": user_oid},
+                sort=[("updated_at", DESCENDING), ("_id", DESCENDING)],
+            )
+        )
+        return [self._medicine_from_doc(row) for row in rows]
 
     def create_medicine(
         self,
-        user_id: int,
+        user_id: str,
         *,
         name: str,
         dosage: str,
@@ -139,33 +108,32 @@ class UserDataService:
         stock_count: int,
         kind: str,
     ) -> MedicineItem:
-        with self._lock, self._connection() as conn:
-            cursor = conn.execute(
-                """
-                INSERT INTO medicines (user_id, name, dosage, instructions, stock_count, kind)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (user_id, name, dosage, instructions, stock_count, kind),
+        user_oid = self._user_oid(user_id)
+        now = utc_now()
+
+        with self._lock:
+            result = self.medicines.insert_one(
+                {
+                    "user_id": user_oid,
+                    "name": name,
+                    "dosage": dosage,
+                    "instructions": instructions,
+                    "stock_count": int(stock_count),
+                    "kind": kind,
+                    "created_at": now,
+                    "updated_at": now,
+                }
             )
-            medicine_id = int(cursor.lastrowid)
-            row = conn.execute(
-                """
-                SELECT id, name, dosage, instructions, stock_count, kind, created_at, updated_at
-                FROM medicines
-                WHERE id = ? AND user_id = ?
-                """,
-                (medicine_id, user_id),
-            ).fetchone()
-            conn.commit()
+            row = self.medicines.find_one({"_id": result.inserted_id, "user_id": user_oid})
 
         if row is None:
             raise ValueError("Không thể tạo thuốc.")
-        return self._medicine_from_row(row)
+        return self._medicine_from_doc(row)
 
     def update_medicine(
         self,
-        user_id: int,
-        medicine_id: int,
+        user_id: str,
+        medicine_id: str,
         *,
         name: str,
         dosage: str,
@@ -173,205 +141,178 @@ class UserDataService:
         stock_count: int,
         kind: str,
     ) -> MedicineItem | None:
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                """
-                UPDATE medicines
-                SET name = ?, dosage = ?, instructions = ?, stock_count = ?, kind = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ? AND user_id = ?
-                """,
-                (name, dosage, instructions, stock_count, kind, medicine_id, user_id),
+        user_oid = self._user_oid(user_id)
+        medicine_oid = self._medicine_oid(medicine_id)
+
+        with self._lock:
+            self.medicines.update_one(
+                {"_id": medicine_oid, "user_id": user_oid},
+                {
+                    "$set": {
+                        "name": name,
+                        "dosage": dosage,
+                        "instructions": instructions,
+                        "stock_count": int(stock_count),
+                        "kind": kind,
+                        "updated_at": utc_now(),
+                    }
+                },
             )
-            row = conn.execute(
-                """
-                SELECT id, name, dosage, instructions, stock_count, kind, created_at, updated_at
-                FROM medicines
-                WHERE id = ? AND user_id = ?
-                """,
-                (medicine_id, user_id),
-            ).fetchone()
-            conn.commit()
+            row = self.medicines.find_one({"_id": medicine_oid, "user_id": user_oid})
 
         if row is None:
             return None
-        return self._medicine_from_row(row)
+        return self._medicine_from_doc(row)
 
-    def delete_medicine(self, user_id: int, medicine_id: int) -> bool:
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                "DELETE FROM reminders WHERE user_id = ? AND medicine_id = ?",
-                (user_id, medicine_id),
-            )
-            cursor = conn.execute(
-                "DELETE FROM medicines WHERE user_id = ? AND id = ?",
-                (user_id, medicine_id),
-            )
-            conn.commit()
-        return cursor.rowcount > 0
+    def delete_medicine(self, user_id: str, medicine_id: str) -> bool:
+        user_oid = self._user_oid(user_id)
+        medicine_oid = self._medicine_oid(medicine_id)
 
-    def _reminder_from_row(self, row: sqlite3.Row) -> ReminderItem:
-        return ReminderItem(
-            id=int(row["id"]),
-            medicine_id=int(row["medicine_id"]),
-            medicine_name=str(row["medicine_name"]),
-            time_of_day=str(row["time_of_day"]),
-            frequency_note=str(row["frequency_note"]),
-            meal_note=str(row["meal_note"]),
-            is_enabled=bool(row["is_enabled"]),
-            next_due_iso=self._next_due_iso(str(row["time_of_day"])),
-            created_at=str(row["created_at"]),
-            updated_at=str(row["updated_at"]),
+        with self._lock:
+            self.reminders.delete_many({"user_id": user_oid, "medicine_id": medicine_oid})
+            result = self.medicines.delete_one({"user_id": user_oid, "_id": medicine_oid})
+        return result.deleted_count > 0
+
+    def _medicine_owner_row(self, user_oid: ObjectId, medicine_oid: ObjectId) -> dict[str, Any] | None:
+        return self.medicines.find_one(
+            {"_id": medicine_oid, "user_id": user_oid},
+            {"_id": 1, "name": 1},
         )
 
-    def _check_medicine_owner(self, conn: sqlite3.Connection, user_id: int, medicine_id: int) -> bool:
-        row = conn.execute(
-            "SELECT id FROM medicines WHERE id = ? AND user_id = ?",
-            (medicine_id, user_id),
-        ).fetchone()
-        return row is not None
+    def list_reminders(self, user_id: str) -> list[ReminderItem]:
+        user_oid = self._user_oid(user_id)
+        rows = list(
+            self.reminders.find(
+                {"user_id": user_oid},
+                sort=[("is_enabled", DESCENDING), ("time_of_day", ASCENDING), ("_id", DESCENDING)],
+            )
+        )
 
-    def list_reminders(self, user_id: int) -> list[ReminderItem]:
-        with self._lock, self._connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT r.id, r.medicine_id, m.name AS medicine_name,
-                       r.time_of_day, r.frequency_note, r.meal_note, r.is_enabled,
-                       r.created_at, r.updated_at
-                FROM reminders r
-                JOIN medicines m ON m.id = r.medicine_id
-                WHERE r.user_id = ?
-                ORDER BY r.is_enabled DESC, r.time_of_day ASC, r.id DESC
-                """,
-                (user_id,),
-            ).fetchall()
+        medicine_ids = [row.get("medicine_id") for row in rows if isinstance(row.get("medicine_id"), ObjectId)]
+        medicine_map: dict[str, str] = {}
+        if medicine_ids:
+            medicines = self.medicines.find({"_id": {"$in": medicine_ids}}, {"_id": 1, "name": 1})
+            medicine_map = {to_id_str(doc["_id"]): str(doc.get("name") or "Không rõ") for doc in medicines}
 
-        reminders = [self._reminder_from_row(row) for row in rows]
+        reminders = [
+            self._reminder_from_doc(row, medicine_map.get(to_id_str(row.get("medicine_id") or ""), "Không rõ"))
+            for row in rows
+        ]
         reminders.sort(key=lambda item: item.next_due_iso)
         return reminders
 
     def create_reminder(
         self,
-        user_id: int,
+        user_id: str,
         *,
-        medicine_id: int,
+        medicine_id: str,
         time_of_day: str,
         frequency_note: str,
         meal_note: str,
         is_enabled: bool,
     ) -> ReminderItem:
-        with self._lock, self._connection() as conn:
-            if not self._check_medicine_owner(conn, user_id, medicine_id):
-                raise ValueError("Thuốc được chọn không hợp lệ.")
+        user_oid = self._user_oid(user_id)
+        medicine_oid = self._medicine_oid(medicine_id)
 
-            cursor = conn.execute(
-                """
-                INSERT INTO reminders (user_id, medicine_id, time_of_day, frequency_note, meal_note, is_enabled)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (user_id, medicine_id, time_of_day, frequency_note, meal_note, int(is_enabled)),
+        medicine_doc = self._medicine_owner_row(user_oid, medicine_oid)
+        if medicine_doc is None:
+            raise ValueError("Thuốc được chọn không hợp lệ.")
+
+        now = utc_now()
+        with self._lock:
+            result = self.reminders.insert_one(
+                {
+                    "user_id": user_oid,
+                    "medicine_id": medicine_oid,
+                    "time_of_day": time_of_day,
+                    "frequency_note": frequency_note,
+                    "meal_note": meal_note,
+                    "is_enabled": bool(is_enabled),
+                    "created_at": now,
+                    "updated_at": now,
+                }
             )
-            reminder_id = int(cursor.lastrowid)
-            row = conn.execute(
-                """
-                SELECT r.id, r.medicine_id, m.name AS medicine_name,
-                       r.time_of_day, r.frequency_note, r.meal_note, r.is_enabled,
-                       r.created_at, r.updated_at
-                FROM reminders r
-                JOIN medicines m ON m.id = r.medicine_id
-                WHERE r.id = ? AND r.user_id = ?
-                """,
-                (reminder_id, user_id),
-            ).fetchone()
-            conn.commit()
+            row = self.reminders.find_one({"_id": result.inserted_id, "user_id": user_oid})
 
         if row is None:
             raise ValueError("Không thể tạo lịch nhắc.")
-        return self._reminder_from_row(row)
+
+        return self._reminder_from_doc(row, str(medicine_doc.get("name") or "Không rõ"))
 
     def update_reminder(
         self,
-        user_id: int,
-        reminder_id: int,
+        user_id: str,
+        reminder_id: str,
         *,
-        medicine_id: int,
+        medicine_id: str,
         time_of_day: str,
         frequency_note: str,
         meal_note: str,
         is_enabled: bool,
     ) -> ReminderItem | None:
-        with self._lock, self._connection() as conn:
-            if not self._check_medicine_owner(conn, user_id, medicine_id):
-                raise ValueError("Thuốc được chọn không hợp lệ.")
+        user_oid = self._user_oid(user_id)
+        reminder_oid = self._reminder_oid(reminder_id)
+        medicine_oid = self._medicine_oid(medicine_id)
 
-            conn.execute(
-                """
-                UPDATE reminders
-                SET medicine_id = ?,
-                    time_of_day = ?,
-                    frequency_note = ?,
-                    meal_note = ?,
-                    is_enabled = ?,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ? AND user_id = ?
-                """,
-                (medicine_id, time_of_day, frequency_note, meal_note, int(is_enabled), reminder_id, user_id),
+        medicine_doc = self._medicine_owner_row(user_oid, medicine_oid)
+        if medicine_doc is None:
+            raise ValueError("Thuốc được chọn không hợp lệ.")
+
+        with self._lock:
+            self.reminders.update_one(
+                {"_id": reminder_oid, "user_id": user_oid},
+                {
+                    "$set": {
+                        "medicine_id": medicine_oid,
+                        "time_of_day": time_of_day,
+                        "frequency_note": frequency_note,
+                        "meal_note": meal_note,
+                        "is_enabled": bool(is_enabled),
+                        "updated_at": utc_now(),
+                    }
+                },
             )
-            row = conn.execute(
-                """
-                SELECT r.id, r.medicine_id, m.name AS medicine_name,
-                       r.time_of_day, r.frequency_note, r.meal_note, r.is_enabled,
-                       r.created_at, r.updated_at
-                FROM reminders r
-                JOIN medicines m ON m.id = r.medicine_id
-                WHERE r.id = ? AND r.user_id = ?
-                """,
-                (reminder_id, user_id),
-            ).fetchone()
-            conn.commit()
+            row = self.reminders.find_one({"_id": reminder_oid, "user_id": user_oid})
 
         if row is None:
             return None
-        return self._reminder_from_row(row)
+        return self._reminder_from_doc(row, str(medicine_doc.get("name") or "Không rõ"))
 
-    def delete_reminder(self, user_id: int, reminder_id: int) -> bool:
-        with self._lock, self._connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM reminders WHERE user_id = ? AND id = ?",
-                (user_id, reminder_id),
-            )
-            conn.commit()
-        return cursor.rowcount > 0
+    def delete_reminder(self, user_id: str, reminder_id: str) -> bool:
+        user_oid = self._user_oid(user_id)
+        reminder_oid = self._reminder_oid(reminder_id)
+        with self._lock:
+            result = self.reminders.delete_one({"user_id": user_oid, "_id": reminder_oid})
+        return result.deleted_count > 0
 
-    def get_settings(self, user_id: int) -> UserSettings:
-        with self._lock, self._connection() as conn:
-            row = conn.execute(
-                """
-                SELECT voice_enabled, large_text, theme, browser_notifications
-                FROM user_settings
-                WHERE user_id = ?
-                """,
-                (user_id,),
-            ).fetchone()
+    def get_settings(self, user_id: str) -> UserSettings:
+        user_oid = self._user_oid(user_id)
+        row = self.user_settings.find_one({"user_id": user_oid})
 
-            if row is None:
-                conn.execute(
-                    """
-                    INSERT INTO user_settings (user_id, voice_enabled, large_text, theme, browser_notifications)
-                    VALUES (?, 0, 0, 'light', 0)
-                    """,
-                    (user_id,),
-                )
-                conn.commit()
-                return UserSettings()
+        if row is None:
+            row = {
+                "user_id": user_oid,
+                "voice_enabled": False,
+                "large_text": False,
+                "theme": "light",
+                "browser_notifications": False,
+                "updated_at": utc_now(),
+            }
+            self.user_settings.insert_one(row)
+
+        theme = str(row.get("theme") or "light")
+        if theme not in {"light", "dark"}:
+            theme = "light"
 
         return UserSettings(
-            voice_enabled=bool(row["voice_enabled"]),
-            large_text=bool(row["large_text"]),
-            theme=str(row["theme"]),
-            browser_notifications=bool(row["browser_notifications"]),
+            voice_enabled=bool(row.get("voice_enabled", False)),
+            large_text=bool(row.get("large_text", False)),
+            theme=theme,
+            browser_notifications=bool(row.get("browser_notifications", False)),
         )
 
-    def update_settings(self, user_id: int, updates: dict[str, Any]) -> UserSettings:
+    def update_settings(self, user_id: str, updates: dict[str, Any]) -> UserSettings:
+        user_oid = self._user_oid(user_id)
         current = self.get_settings(user_id)
         payload = current.model_dump()
 
@@ -379,90 +320,80 @@ class UserDataService:
             if value is not None and key in payload:
                 payload[key] = value
 
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO user_settings (user_id, voice_enabled, large_text, theme, browser_notifications, updated_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(user_id) DO UPDATE SET
-                    voice_enabled = excluded.voice_enabled,
-                    large_text = excluded.large_text,
-                    theme = excluded.theme,
-                    browser_notifications = excluded.browser_notifications,
-                    updated_at = CURRENT_TIMESTAMP
-                """,
-                (
-                    user_id,
-                    int(bool(payload["voice_enabled"])),
-                    int(bool(payload["large_text"])),
-                    str(payload["theme"]),
-                    int(bool(payload["browser_notifications"])),
-                ),
-            )
-            conn.commit()
+        safe_theme = str(payload["theme"]) if str(payload["theme"]) in {"light", "dark"} else "light"
+
+        self.user_settings.update_one(
+            {"user_id": user_oid},
+            {
+                "$set": {
+                    "voice_enabled": bool(payload["voice_enabled"]),
+                    "large_text": bool(payload["large_text"]),
+                    "theme": safe_theme,
+                    "browser_notifications": bool(payload["browser_notifications"]),
+                    "updated_at": utc_now(),
+                },
+                "$setOnInsert": {
+                    "user_id": user_oid,
+                },
+            },
+            upsert=True,
+        )
 
         return UserSettings(**payload)
 
     def add_check_history(
         self,
-        user_id: int,
+        user_id: str,
         *,
         input_items: list[str],
         summary_level: str,
         summary_title: str,
         result_payload: dict[str, Any],
     ) -> None:
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO check_history (user_id, input_items, summary_level, summary_title, result_payload)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    user_id,
-                    json.dumps(input_items, ensure_ascii=False),
-                    summary_level,
-                    summary_title,
-                    json.dumps(result_payload, ensure_ascii=False),
-                ),
+        user_oid = self._user_oid(user_id)
+        with self._lock:
+            self.check_history.insert_one(
+                {
+                    "user_id": user_oid,
+                    "input_items": [str(item) for item in input_items],
+                    "summary_level": summary_level,
+                    "summary_title": summary_title,
+                    "result_payload": result_payload,
+                    "created_at": utc_now(),
+                }
             )
-            conn.commit()
 
-    def list_check_history(self, user_id: int, limit: int = 10) -> list[CheckHistoryItem]:
-        with self._lock, self._connection() as conn:
-            rows = conn.execute(
-                """
-                SELECT id, input_items, summary_level, summary_title, created_at
-                FROM check_history
-                WHERE user_id = ?
-                ORDER BY datetime(created_at) DESC, id DESC
-                LIMIT ?
-                """,
-                (user_id, limit),
-            ).fetchall()
+    def list_check_history(self, user_id: str, limit: int = 10) -> list[CheckHistoryItem]:
+        user_oid = self._user_oid(user_id)
+        rows = list(
+            self.check_history.find(
+                {"user_id": user_oid},
+                sort=[("created_at", DESCENDING), ("_id", DESCENDING)],
+                limit=max(1, int(limit)),
+            )
+        )
 
         output: list[CheckHistoryItem] = []
         for row in rows:
-            try:
-                items = json.loads(str(row["input_items"]))
-                if not isinstance(items, list):
-                    items = []
-            except json.JSONDecodeError:
+            raw_items = row.get("input_items")
+            if isinstance(raw_items, list):
+                items = [str(item) for item in raw_items]
+            else:
                 items = []
 
             output.append(
                 CheckHistoryItem(
-                    id=int(row["id"]),
-                    input_items=[str(item) for item in items],
-                    summary_level=str(row["summary_level"]),
-                    summary_title=str(row["summary_title"]),
-                    created_at=str(row["created_at"]),
+                    id=to_id_str(row["_id"]),
+                    input_items=items,
+                    summary_level=str(row.get("summary_level") or "safe"),
+                    summary_title=str(row.get("summary_title") or ""),
+                    created_at=datetime_to_iso(row.get("created_at")),
                 )
             )
 
         return output
 
-    def get_dashboard_data(self, user_id: int) -> DashboardData:
+    def get_dashboard_data(self, user_id: str) -> DashboardData:
         medicines = self.list_medicines(user_id)
         reminders = self.list_reminders(user_id)
         history = self.list_check_history(user_id, limit=1)

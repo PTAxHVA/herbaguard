@@ -3,63 +3,36 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
-import sqlite3
-from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
 from threading import Lock
+
+from bson import ObjectId
+from pymongo import ASCENDING
+from pymongo.database import Database
+from pymongo.errors import DuplicateKeyError
+
+from services.mongo_helpers import to_id_str, utc_now
 
 
 @dataclass(frozen=True)
 class AuthUserRecord:
-    id: int
+    id: str
     full_name: str
     email: str
 
 
 class AuthService:
-    def __init__(self, db_path: Path) -> None:
-        self.db_path = db_path
+    def __init__(self, db: Database) -> None:
+        self.db = db
+        self.users = db["users"]
+        self.sessions = db["sessions"]
         self._lock = Lock()
-        self._init_db()
+        self._init_indexes()
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    @contextmanager
-    def _connection(self):
-        conn = self._connect()
-        try:
-            yield conn
-        finally:
-            conn.close()
-
-    def _init_db(self) -> None:
-        with self._lock, self._connection() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    full_name TEXT NOT NULL,
-                    email TEXT NOT NULL UNIQUE,
-                    password_hash TEXT NOT NULL,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS sessions (
-                    token TEXT PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY(user_id) REFERENCES users(id)
-                )
-                """
-            )
-            conn.commit()
+    def _init_indexes(self) -> None:
+        self.users.create_index([("email", ASCENDING)], unique=True, name="users_email_unique")
+        self.sessions.create_index([("token_hash", ASCENDING)], unique=True, name="sessions_token_hash_unique")
+        self.sessions.create_index([("user_id", ASCENDING), ("created_at", ASCENDING)], name="sessions_user_created_at")
 
     @staticmethod
     def _hash_password(password: str) -> str:
@@ -80,61 +53,95 @@ class AuthService:
         return hmac.compare_digest(candidate, expected)
 
     @staticmethod
-    def _build_user(row: sqlite3.Row) -> AuthUserRecord:
-        return AuthUserRecord(id=int(row["id"]), full_name=str(row["full_name"]), email=str(row["email"]))
+    def _hash_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _build_user(doc: dict[str, object]) -> AuthUserRecord:
+        return AuthUserRecord(
+            id=to_id_str(doc["_id"]),
+            full_name=str(doc.get("full_name") or ""),
+            email=str(doc.get("email") or ""),
+        )
 
     def register(self, full_name: str, email: str, password: str) -> tuple[AuthUserRecord, str]:
+        clean_name = full_name.strip()
+        normalized_email = email.strip().lower()
         pwd_hash = self._hash_password(password)
 
-        with self._lock, self._connection() as conn:
-            existing = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-            if existing is not None:
-                raise ValueError("Email đã tồn tại. Vui lòng dùng email khác.")
+        with self._lock:
+            try:
+                result = self.users.insert_one(
+                    {
+                        "full_name": clean_name,
+                        "email": normalized_email,
+                        "password_hash": pwd_hash,
+                        "created_at": utc_now(),
+                    }
+                )
+            except DuplicateKeyError as exc:
+                raise ValueError("Email đã tồn tại. Vui lòng dùng email khác.") from exc
 
-            cursor = conn.execute(
-                "INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)",
-                (full_name, email, pwd_hash),
-            )
-            user_id = int(cursor.lastrowid)
+            user_doc = {
+                "_id": result.inserted_id,
+                "full_name": clean_name,
+                "email": normalized_email,
+            }
+
             token = secrets.token_urlsafe(32)
-            conn.execute("INSERT INTO sessions (token, user_id) VALUES (?, ?)", (token, user_id))
-            conn.commit()
+            self.sessions.insert_one(
+                {
+                    "token_hash": self._hash_token(token),
+                    "user_id": result.inserted_id,
+                    "created_at": utc_now(),
+                }
+            )
 
-            user = AuthUserRecord(id=user_id, full_name=full_name, email=email)
-            return user, token
+        return self._build_user(user_doc), token
 
     def login(self, email: str, password: str) -> tuple[AuthUserRecord, str]:
-        with self._lock, self._connection() as conn:
-            row = conn.execute(
-                "SELECT id, full_name, email, password_hash FROM users WHERE email = ?",
-                (email,),
-            ).fetchone()
+        normalized_email = email.strip().lower()
 
-            if row is None or not self._verify_password(password, str(row["password_hash"])):
+        with self._lock:
+            doc = self.users.find_one(
+                {"email": normalized_email},
+                {
+                    "_id": 1,
+                    "full_name": 1,
+                    "email": 1,
+                    "password_hash": 1,
+                },
+            )
+            if doc is None or not self._verify_password(password, str(doc.get("password_hash") or "")):
                 raise ValueError("Email hoặc mật khẩu không đúng.")
 
             token = secrets.token_urlsafe(32)
-            conn.execute("INSERT INTO sessions (token, user_id) VALUES (?, ?)", (token, int(row["id"])))
-            conn.commit()
+            self.sessions.insert_one(
+                {
+                    "token_hash": self._hash_token(token),
+                    "user_id": doc["_id"],
+                    "created_at": utc_now(),
+                }
+            )
 
-            return self._build_user(row), token
+        return self._build_user(doc), token
 
     def get_user_by_token(self, token: str) -> AuthUserRecord | None:
-        with self._lock, self._connection() as conn:
-            row = conn.execute(
-                """
-                SELECT u.id, u.full_name, u.email
-                FROM sessions s
-                JOIN users u ON u.id = s.user_id
-                WHERE s.token = ?
-                """,
-                (token,),
-            ).fetchone()
-            if row is None:
-                return None
-            return self._build_user(row)
+        token_hash = self._hash_token(token)
+        session = self.sessions.find_one({"token_hash": token_hash}, {"user_id": 1})
+        if session is None:
+            return None
+
+        user_id = session.get("user_id")
+        if not isinstance(user_id, ObjectId):
+            return None
+
+        doc = self.users.find_one({"_id": user_id}, {"_id": 1, "full_name": 1, "email": 1})
+        if doc is None:
+            return None
+
+        return self._build_user(doc)
 
     def logout(self, token: str) -> None:
-        with self._lock, self._connection() as conn:
-            conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
-            conn.commit()
+        token_hash = self._hash_token(token)
+        self.sessions.delete_one({"token_hash": token_hash})

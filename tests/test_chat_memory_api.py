@@ -3,30 +3,32 @@ from __future__ import annotations
 import importlib
 import os
 import sys
-import tempfile
 import unittest
 import uuid
-from pathlib import Path
 
+import mongomock
+from bson import ObjectId
 from fastapi.testclient import TestClient
 
+from database.mongo import clear_mongo_client_cache
 from services.chat_memory_service import ChatMemoryService
 
 
 class ChatMemoryServiceTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.db_path = Path(self.temp_dir.name) / "chat-memory-test.db"
-        self.memory = ChatMemoryService(self.db_path)
+        self.client = mongomock.MongoClient()
+        self.db = self.client[f"chat-memory-{uuid.uuid4().hex}"]
+        self.memory = ChatMemoryService(self.db)
+        self.user_id = str(ObjectId())
 
     def tearDown(self) -> None:
-        self.temp_dir.cleanup()
+        self.client.close()
 
     def test_append_list_clear_roundtrip(self) -> None:
         session_id = "unit-session-1"
-        self.memory.append_message(1, session_id, "user", "Xin chào")
+        self.memory.append_message(self.user_id, session_id, "user", "Xin chào")
         self.memory.append_message(
-            1,
+            self.user_id,
             session_id,
             "assistant",
             "Tôi có thể hỗ trợ kiểm tra tương tác.",
@@ -34,25 +36,30 @@ class ChatMemoryServiceTests(unittest.TestCase):
             fallback=False,
         )
 
-        history = self.memory.get_history(1, session_id)
+        history = self.memory.get_history(self.user_id, session_id)
         self.assertEqual(len(history), 2)
         self.assertEqual(history[0].role, "user")
         self.assertEqual(history[1].role, "assistant")
         self.assertEqual(history[1].citations, ["database/interaction.json"])
 
-        deleted = self.memory.clear_history(1, session_id)
+        deleted = self.memory.clear_history(self.user_id, session_id)
         self.assertEqual(deleted, 2)
-        self.assertEqual(self.memory.get_history(1, session_id), [])
+        self.assertEqual(self.memory.get_history(self.user_id, session_id), [])
 
 
 class ChatApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_dir = tempfile.TemporaryDirectory()
-        cls.db_path = Path(cls.temp_dir.name) / "api-test.db"
-        os.environ["HERBAGUARD_DB_PATH"] = str(cls.db_path)
+        cls._saved_mongodb_uri = os.environ.get("MONGODB_URI")
+        cls._saved_mongodb_db_name = os.environ.get("MONGODB_DB_NAME")
+        cls._saved_mongodb_use_mock = os.environ.get("MONGODB_USE_MOCK")
         cls._saved_google_api_key = os.environ.pop("GOOGLE_API_KEY", None)
         cls._saved_gemini_model = os.environ.pop("GEMINI_MODEL", None)
+
+        os.environ["MONGODB_URI"] = "mongodb://127.0.0.1:27017"
+        os.environ["MONGODB_DB_NAME"] = f"herbaguard-test-api-{uuid.uuid4().hex}"
+        os.environ["MONGODB_USE_MOCK"] = "1"
+        clear_mongo_client_cache()
 
         if "app" in sys.modules:
             del sys.modules["app"]
@@ -62,8 +69,19 @@ class ChatApiTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls.client.close()
-        cls.temp_dir.cleanup()
-        os.environ.pop("HERBAGUARD_DB_PATH", None)
+        clear_mongo_client_cache()
+        if cls._saved_mongodb_uri is None:
+            os.environ.pop("MONGODB_URI", None)
+        else:
+            os.environ["MONGODB_URI"] = cls._saved_mongodb_uri
+        if cls._saved_mongodb_db_name is None:
+            os.environ.pop("MONGODB_DB_NAME", None)
+        else:
+            os.environ["MONGODB_DB_NAME"] = cls._saved_mongodb_db_name
+        if cls._saved_mongodb_use_mock is None:
+            os.environ.pop("MONGODB_USE_MOCK", None)
+        else:
+            os.environ["MONGODB_USE_MOCK"] = cls._saved_mongodb_use_mock
         if cls._saved_google_api_key is not None:
             os.environ["GOOGLE_API_KEY"] = cls._saved_google_api_key
         if cls._saved_gemini_model is not None:
